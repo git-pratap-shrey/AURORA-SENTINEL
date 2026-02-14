@@ -53,6 +53,7 @@ class OllamaProvider(VLMProvider):
             # Ollama Python client handles image bytes or path
             response = ollama.chat(
                 model=self.model_name,
+                keep_alive=-1, # Keep model loaded, rely on OS paging for RAM
                 messages=[
                     {
                         'role': 'user',

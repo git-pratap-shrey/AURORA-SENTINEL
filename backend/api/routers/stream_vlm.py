@@ -87,14 +87,7 @@ async def websocket_vlm_feed(websocket: WebSocket):
             
             if frame_count % (SKIP_FRAMES + 1) == 0:
                 try:
-                    # 1. Standard Detection (YOLO)
-                    detection = ml_service.detector.process_frame(frame)
-                    
-                    # 2. Risk Calculation
-                    risk_score, risk_factors = ml_service.risk_engine.calculate_risk(detection)
-                    risk_score = risk_score or 0
-                    
-                    # 2. Check for completed VLM task
+                    # 1. Check for completed VLM task (Non-Blocking Check)
                     if vlm_task and vlm_task.done():
                         try:
                             vlm_result = vlm_task.result()
@@ -105,29 +98,46 @@ async def websocket_vlm_feed(websocket: WebSocket):
                         finally:
                             vlm_task = None # Reset for next run
 
-                    # 3. Trigger New VLM Analysis (If idle)
-                    now = time.time()
-                    should_trigger = (risk_score > 60 and (now - last_vlm_time > 3)) or (now - last_vlm_time > VLM_INTERVAL)
-                    
-                    if should_trigger and vlm_task is None:
-                        print(f"Triggering VLM Analysis (Interval: {now - last_vlm_time:.1f}s)...")
+                    is_vlm_running = (vlm_task is not None)
+
+                    if is_vlm_running:
+                        # OPTIMIZATION: System is busy with AI (16s+ load).
+                        # Skip heavy YOLO inference to prevent video freeze.
+                        # Reuse last known detection.
+                        detection = cached_result["detection"]
+                        risk_score = cached_result["risk_score"]
+                        # Optional: Add visual indicator
+                        current_narrative = "AI Thinking... (Video smooth)" 
+                    else:
+                        # Normal Mode: Run YOLO High FPS
+                        detection = ml_service.detector.process_frame(frame)
+                        risk_score, risk_factors = ml_service.risk_engine.calculate_risk(detection)
+                        risk_score = risk_score or 0
                         
-                        # Prepare args (Copy frame to avoid race conditions)
-                        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                        pil_img = Image.fromarray(rgb_frame)
-                        prompt = "Analyze this surveillance frame. Describe any potential threats, weapons, or aggressive behavior concisely. If safe, say 'Situation normal'."
+                        # 3. Trigger New VLM Analysis (If idle)
+                        now = time.time()
+                        should_trigger = (risk_score > 60 and (now - last_vlm_time > 3)) or (now - last_vlm_time > VLM_INTERVAL)
                         
-                        # Launch Background Task (Non-Blocking)
-                        loop = asyncio.get_event_loop()
-                        vlm_task = loop.create_task(
-                            loop.run_in_executor(None, vlm_service.analyze_scene, pil_img, prompt)
-                        )
-                        last_vlm_time = now
-                    
+                        if should_trigger:
+                            print(f"Triggering VLM Analysis (Interval: {now - last_vlm_time:.1f}s)...")
+                            
+                            # Prepare args (Copy frame to avoid race conditions)
+                            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                            pil_img = Image.fromarray(rgb_frame)
+                            prompt = "Analyze this surveillance frame. Describe any potential threats, weapons, or aggressive behavior concisely. If safe, say 'Situation normal'."
+                            
+                            # Launch Background Task (Non-Blocking)
+                            loop = asyncio.get_event_loop()
+                            vlm_task = loop.create_task(
+                                loop.run_in_executor(None, vlm_service.analyze_scene, pil_img, prompt)
+                            )
+                            last_vlm_time = now
+                            current_narrative = "Analyzing Scene..." 
+
                     # Alert Logic
                     alert = None
                     if risk_score > 65:
-                        alert = ml_service.risk_engine.generate_alert(risk_score, risk_factors)
+                        alert = ml_service.risk_engine.generate_alert(risk_score, risk_factors if not is_vlm_running else [])
                         alert['level'] = alert['level'].upper()
                         # Add VLM insight to alert
                         alert['ai_analysis'] = current_narrative
