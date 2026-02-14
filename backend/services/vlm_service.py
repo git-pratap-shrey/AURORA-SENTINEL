@@ -44,6 +44,12 @@ class OllamaProvider(VLMProvider):
 
     def analyze(self, image, prompt):
         try:
+            # Convert PIL to Bytes for Ollama
+            import io
+            img_byte_arr = io.BytesIO()
+            image.save(img_byte_arr, format='JPEG')
+            img_bytes = img_byte_arr.getvalue()
+
             # Ollama Python client handles image bytes or path
             response = ollama.chat(
                 model=self.model_name,
@@ -51,7 +57,7 @@ class OllamaProvider(VLMProvider):
                     {
                         'role': 'user',
                         'content': prompt,
-                        'images': [image] # Expects bytes or path
+                        'images': [img_bytes] 
                     }
                 ]
             )
@@ -79,8 +85,10 @@ class VLMService:
             prompt: Text prompt
         """
         start = time.time()
+        print(f"[{self.provider_name}] Starting analysis...")
         result = self.provider.analyze(frame_pil, prompt)
         duration = time.time() - start
+        print(f"[{self.provider_name}] Analysis complete. Time: {duration:.2f}s")
         
         return {
             "provider": self.provider_name,

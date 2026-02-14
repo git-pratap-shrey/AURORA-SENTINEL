@@ -54,8 +54,9 @@ async def websocket_vlm_feed(websocket: WebSocket):
     
     # VLM State
     last_vlm_time = 0
-    VLM_INTERVAL = 5 # seconds (Analyze every 5s by default)
+    VLM_INTERVAL = 10 # seconds (Analyze every 5s by default)
     current_narrative = "Initializing AI Analysis..."
+    vlm_task = None # Handle for the background task
     
     cached_result = {
         "detection": {"poses": [], "objects": []}, 
@@ -93,21 +94,34 @@ async def websocket_vlm_feed(websocket: WebSocket):
                     risk_score, risk_factors = ml_service.risk_engine.calculate_risk(detection)
                     risk_score = risk_score or 0
                     
-                    # 3. VLM Analysis Trigger
-                    # Trigger if: High Risk OR Time Interval passed
+                    # 2. Check for completed VLM task
+                    if vlm_task and vlm_task.done():
+                        try:
+                            vlm_result = vlm_task.result()
+                            print(f"Received VLM Result: {vlm_result.get('description', 'Error')[:50]}...")
+                            current_narrative = vlm_result.get("description", "Analysis Failed")
+                        except Exception as e:
+                            print(f"VLM Task Error: {e}")
+                        finally:
+                            vlm_task = None # Reset for next run
+
+                    # 3. Trigger New VLM Analysis (If idle)
                     now = time.time()
-                    if (risk_score > 60 and (now - last_vlm_time > 3)) or (now - last_vlm_time > VLM_INTERVAL):
-                        print("Triggering VLM Analysis...")
-                        # Run in executor to avoid blocking video feed
+                    should_trigger = (risk_score > 60 and (now - last_vlm_time > 3)) or (now - last_vlm_time > VLM_INTERVAL)
+                    
+                    if should_trigger and vlm_task is None:
+                        print(f"Triggering VLM Analysis (Interval: {now - last_vlm_time:.1f}s)...")
+                        
+                        # Prepare args (Copy frame to avoid race conditions)
                         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                         pil_img = Image.fromarray(rgb_frame)
-                        
-                        loop = asyncio.get_event_loop()
-                        # We use a custom prompt focusing on safety
                         prompt = "Analyze this surveillance frame. Describe any potential threats, weapons, or aggressive behavior concisely. If safe, say 'Situation normal'."
                         
-                        vlm_result = await loop.run_in_executor(None, vlm_service.analyze_scene, pil_img, prompt)
-                        current_narrative = vlm_result.get("description", "Analysis Failed")
+                        # Launch Background Task (Non-Blocking)
+                        loop = asyncio.get_event_loop()
+                        vlm_task = loop.create_task(
+                            loop.run_in_executor(None, vlm_service.analyze_scene, pil_img, prompt)
+                        )
                         last_vlm_time = now
                     
                     # Alert Logic
