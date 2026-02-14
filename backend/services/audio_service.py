@@ -1,7 +1,7 @@
 import os
 import torch
 import numpy as np
-from moviepy.editor import VideoFileClip
+from moviepy import VideoFileClip
 from transformers import pipeline
 import gc
 
