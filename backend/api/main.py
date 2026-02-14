@@ -53,6 +53,7 @@ app.include_router(stream.router, prefix="/ws", tags=["Live Stream"]) # Mounts a
 app.include_router(stream_vlm.router, prefix="/vlm", tags=["Intelligent Stream"]) # Mounts at /vlm/vlm-feed
 app.include_router(video.router, tags=["Video Processing"]) # Mounts at /process/video (explicit in router)
 app.include_router(archive.router, prefix="/archive", tags=["Archive"])
+app.include_router(intelligence.router, prefix="/intelligence", tags=["Intelligence"]) # NEW
 
 
 @app.get("/")
