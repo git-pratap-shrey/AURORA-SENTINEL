@@ -23,7 +23,28 @@ class SearchResult(BaseModel):
     provider: str
     confidence: float
 
-# ... (skipping lines)
+@router.post("/index")
+async def trigger_indexing(background_tasks: BackgroundTasks):
+    """
+    Scans metadata.json and updates the Vector DB.
+    """
+    try:
+        # Run in background to avoid blocking
+        background_tasks.add_task(search_service.index_metadata)
+        return {"status": "Indexing started in background"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/process")
+async def trigger_processing(background_tasks: BackgroundTasks):
+    """
+    Scans storage/recordings and runs VLM analysis on new videos.
+    """
+    try:
+        background_tasks.add_task(offline_processor.scan_and_process)
+        return {"status": "Offline Processing started in background"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/search", response_model=List[SearchResult])
 async def search_archive(q: str, limit: int = 5):
