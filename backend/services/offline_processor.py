@@ -75,12 +75,36 @@ class OfflineProcessor:
                 pil_img = Image.fromarray(rgb_frame)
                 
                 # Prompt - STRICT JSON & THREAT DETECTION
+                # Prompt - ENHANCED FORENSIC ANALYSIS
                 prompt = (
-                    "Analyze this surveillance frame. Return a valid JSON object only. "
-                    "Format: {\"summary\": \"concise description\", \"threats\": [\"list\", \"of\", \"weapons\", \"or\", \"violence\"], \"severity\": \"low/medium/high\", \"confidence\": 0-100}. "
-                    "Focus strictly on: Guns, Knives, Fighting, Blood, Fire. "
-                    "If safe, severity is 'low'. Do not hallucinate."
+                    "You are a forensic video analyst.\n"
+                    "You analyze surveillance images for security monitoring.\n\n"
+
+                    "You are a JSON-only response generator.\n"
+                    "Return a single valid JSON object and NOTHING else.\n"
+                    "No markdown. No explanations. No extra text.\n\n"
+
+                    "TASKS:\n"
+                    "1) SUMMARY: Describe what is happening in the scene. Focus on people, posture, actions, interactions, and likely intent.\n"
+                    "2) THREATS: Look specifically for: Guns (handgun, rifle), knives, fire, blood, and active fighting (punching, kicking).\n"
+                    "3) SEVERITY:\n"
+                    "   - high: visible weapon, active violence, fire.\n"
+                    "   - medium: aggressive posture, ambiguous object, heated dispute.\n"
+                    "   - low: walking, standing, talking, normal behavior.\n\n"
+
+                    "SCHEMA:\n"
+                    "{\n"
+                    "  \"summary\": \"string\",\n"
+                    "  \"threats\": [\"string\"],\n"
+                    "  \"severity\": \"low\" | \"medium\" | \"high\",\n"
+                    "  \"confidence\": number (0-100)\n"
+                    "}\n\n"
+
+                    "Before responding, validate that the output is valid JSON.\n"
+                    "If invalid, correct it.\n"
+                    "If no threats are found, return an empty threats array []."
                 )
+
 
                 # Call VLM
                 result = vlm_service.analyze_scene(pil_img, prompt)
