@@ -3,6 +3,7 @@ import { Box, Typography, useTheme, alpha, MenuItem, Select, FormControl, Switch
 import { User, Box as BoxIcon, RefreshCw, BrainCircuit } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
 import { useSettings } from '../context/SettingsContext';
+import { WS_BASE_URL } from '../config';
 
 const LiveFeed = () => {
     const { addNotification } = useNotifications();
@@ -86,9 +87,13 @@ const LiveFeed = () => {
     // WebSocket & Loop
     useEffect(() => {
         const connect = () => {
+<<<<<<< HEAD
             // Dynamic URL based on mode
             const url = vlmMode ? `ws://localhost:8000/vlm/vlm-feed` : `ws://localhost:8000/ws/live-feed`;
             const ws = new WebSocket(url);
+=======
+            const ws = new WebSocket(`${WS_BASE_URL}/ws/live-feed`);
+>>>>>>> origin/main
             wsRef.current = ws;
 
             ws.onopen = () => setIsConnected(true);

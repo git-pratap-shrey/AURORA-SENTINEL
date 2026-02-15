@@ -60,6 +60,23 @@ app.include_router(video.router, tags=["Video Processing"]) # Mounts at /process
 app.include_router(archive.router, prefix="/archive", tags=["Archive"])
 app.include_router(intelligence.router, prefix="/intelligence", tags=["Intelligence"]) # NEW
 
+# Serve Static Files (Frontend)
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+# Check if build directory exists
+if os.path.exists("frontend/build"):
+    app.mount("/", StaticFiles(directory="frontend/build", html=True), name="frontend")
+    
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        # Prevent intercepting API routes
+        if full_path.startswith(("alerts", "analytics", "ws", "process", "archive", "health")):
+            return JSONResponse(status_code=404, content={"detail": "Not Found"})
+        return FileResponse("frontend/build/index.html")
+else:
+    print("WARNING: frontend/build directory not found. Frontend will not be served by backend.")
+
 
 @app.get("/")
 async def root():
