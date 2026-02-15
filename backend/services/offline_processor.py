@@ -80,95 +80,47 @@ class OfflineProcessor:
                 #     "You are a critical surveillance AI. Analyze this scene for security threats. "
                 #     "Describe any fighting, weapons, aggression, or suspicious behavior immediately. "
                 #     "Do not use soft language. If people are fighting, say 'Physical Altercation'. "
-                #     "If safe, be concise. Focus on: Weapons, Violence, Crowds, Distress."
-                #     "Analyze this surveillance frame. Return a valid JSON object only. "
-                #     "Format: {\"summary\": \"concise description\", \"threats\": [\"list\", \"of\", \"weapons\", \"or\", \"violence\"], \"severity\": \"low/medium/high\", \"confidence\": 0-100}. "
-                #     "Focus strictly on: Guns, Knives, Fighting, Blood, Fire. "
-                #     "If safe, severity is 'low'. Do not hallucinate."
-                
+                # Prompt - DESCRIPTIVE NARRATIVE (No JSON)
                 prompt = (
-                    "You are a forensic video analyst."
-                    "You analyze surveillance images for security monitoring."
-
-                    "You are a JSON-only response generator."
-                    "Return a single valid JSON object and NOTHING else."
-                    "No markdown. No explanations. No extra text."
-
-                    "TASKS:"
-                    "1) SUMMARY: Describe in detail what is happening in the scene. Focus on people, posture, actions, interactions, and likely intent."
-                    "2) THREATS: Look for: firearms, knives, fire, blood, and active fighting (punching, kicking)."
-                    "3) SEVERITY:"
-                    "   - high: visible weapon, active violence, fire."
-                    "   - medium: aggressive posture, ambiguous object, heated dispute."
-                    "   - low: walking, standing, talking, normal behavior."
-
-                    "SCHEMA:"
-                    "{"
-                    "  \"summary\": \"string\","
-                    "  \"threats\": [\"string\"],"
-                    "  \"severity\": \"low\" | \"medium\" | \"high\","
-                    "  \"confidence\": number (0-100)"
-                    "}"
+                    "Describe this surveillance scene in detail. "
+                    "Focus on people, clothing, actions, and any potential security threats (weapons, fighting, fire). "
+                    "Be objective and precise."
                 )
-
 
                 # Call VLM
                 result = vlm_service.analyze_scene(pil_img, prompt)
-                
-                # Try to parse the result as JSON. If fails, perform fallback.
-                
-                # Robust JSON Extraction
-                raw_text = result.get('description', '{}')
-                parsed_data = {}
-                
-                def extract_json(text):
-                    try:
-                        # 1. Strip Markdown Code Blocks (```json ... ```)
-                        text = re.sub(r'```json\s*', '', text, flags=re.IGNORECASE)
-                        text = re.sub(r'```\s*', '', text)
-                        
-                        # 2. Find outermost braces
-                        match = re.search(r'\{.*\}', text, re.DOTALL)
-                        if match:
-                            candidate = match.group(0)
-                            
-                            # 3. Fix simple trailing commas (common LLM error)
-                            candidate = re.sub(r',\s*}', '}', candidate)
-                            candidate = re.sub(r',\s*]', ']', candidate)
-                            
-                            return json.loads(candidate)
-                    except:
-                        pass
-                    return None
+                description = result.get('description', '').strip()
 
-                json_obj = extract_json(raw_text)
+                # Basic heuristic for metadata (to keep frontend working)
+                detected_threats = []
+                severity = "low"
                 
-                if json_obj:
-                    # Success!
-                    parsed_data = {
-                        "summary": json_obj.get("summary", "No summary provided"),
-                        "threats": json_obj.get("threats", []),
-                        "severity": json_obj.get("severity", "low").lower(),
-                        "confidence": json_obj.get("confidence", 0)
-                    }
-                else:
-                    # Fallback for plain text or failed parse
-                    # If raw_text is really just markdown JSON that failed regex, we might still want to clean it for display
-                    clean_text = raw_text.replace('```json', '').replace('```', '').strip()
-                    parsed_data = {
-                        "summary": clean_text[:200] + "..." if len(clean_text) > 200 else clean_text,
-                        "threats": [],
-                        "severity": "unknown",
-                        "confidence": 0
-                    }
+                lower_desc = description.lower()
+                threat_keywords = {
+                    "gun": "gun", "firearm": "gun", "rifle": "gun", "pistol": "gun",
+                    "knife": "knife", "blade": "knife", "machete": "knife",
+                    "fire": "fire", "explosion": "fire",
+                    "fighting": "fight", "punching": "fight", "kicking": "fight", "brawl": "fight",
+                    "blood": "blood"
+                }
 
-                # Save structured data
+                for k, v in threat_keywords.items():
+                    if k in lower_desc:
+                        if v not in detected_threats:
+                            detected_threats.append(v)
+
+                if len(detected_threats) > 0:
+                    severity = "high"
+                elif "aggressive" in lower_desc or "shouting" in lower_desc or "pushing" in lower_desc:
+                    severity = "medium"
+
+                # Save event
                 event = {
                     "timestamp": round(timestamp, 2),
-                    "description": parsed_data.get('summary', raw_text),
-                    "threats": parsed_data.get('threats', []),
-                    "severity": parsed_data.get('severity', 'low'),
-                    "confidence": parsed_data.get('confidence', 0),
+                    "description": description,
+                    "threats": detected_threats,
+                    "severity": severity,
+                    "confidence": 0, # Placeholder
                     "provider": vlm_service.provider_name
                 }
                 
