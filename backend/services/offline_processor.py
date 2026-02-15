@@ -76,16 +76,17 @@ class OfflineProcessor:
                 
                 # Prompt - STRICT JSON & THREAT DETECTION
                 # Prompt - ENHANCED FORENSIC ANALYSIS
-                # prompt = (
-                #     "You are a critical surveillance AI. Analyze this scene for security threats. "
-                #     "Describe any fighting, weapons, aggression, or suspicious behavior immediately. "
-                #     "Do not use soft language. If people are fighting, say 'Physical Altercation'. "
-                # Prompt - DESCRIPTIVE NARRATIVE (No JSON)
                 prompt = (
-                    "Describe this surveillance scene in detail. "
-                    "Focus on people, clothing, actions, and any potential security threats (weapons, fighting, fire). "
-                    "Be objective and precise."
+                    "You are a critical surveillance AI. Analyze this scene for security threats. "
+                    "Describe any fighting, weapons, aggression, or suspicious behavior immediately. "
+                    "Do not use soft language or give benefit of doubt. If people are actually fighting, say 'Physical Altercation'.  "
                 )
+                # Prompt - DESCRIPTIVE NARRATIVE (No JSON)
+                # prompt = (
+                #     "Describe this surveillance scene in detail. "
+                #     "Focus on people, clothing, actions, and any potential security threats (weapons, fighting, fire). "
+                #     "Be objective and precise."
+                # )
 
                 # Call VLM
                 result = vlm_service.analyze_scene(pil_img, prompt)
@@ -128,7 +129,7 @@ class OfflineProcessor:
                 # We store the rich text description for searching, but keep structured data for UI
                 events.append(event)
                 
-                print(f"  [Time: {round(timestamp, 2)}s] {parsed_data.get('summary', 'Processed')[:50]}... | Severity: {parsed_data.get('severity')}")
+                print(f"  [Time: {round(timestamp, 2)}s] {event.get('description', 'Processed')[:50]}... | Severity: {severity}")
             
             current_frame += 1
             
