@@ -162,6 +162,11 @@ class OfflineProcessor:
         metadata_db.append(record)
         self.save_metadata(metadata_db)
         print(f"Finished processing {video_filename}. Metadata saved.")
+        
+        # Index into Vector DB for RAG
+        from backend.services.search_service import search_service
+        print("Indexing into Vector DB...")
+        search_service.index_metadata()
 
     def scan_and_process(self):
         print(f"Scanning {self.storage_dir} for new videos...")
