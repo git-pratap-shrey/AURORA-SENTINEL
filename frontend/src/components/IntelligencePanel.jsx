@@ -4,6 +4,77 @@ import { Search, Brain, Play, Clock, AlertTriangle, Activity } from 'lucide-reac
 const IntelligencePanel = () => {
     const [selectedSeverity, setSelectedSeverity] = useState('ALL');
     const [selectedThreat, setSelectedThreat] = useState(null);
+    const [activeTab, setActiveTab] = useState('latest'); // 'latest' or 'search'
+    const [query, setQuery] = useState('');
+    const [results, setResults] = useState([]);
+    const [latestEvents, setLatestEvents] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [selectedVideo, setSelectedVideo] = useState(null);
+
+    // Fetch latest insights on mount
+    useEffect(() => {
+        fetchLatest();
+    }, []);
+
+    const fetchLatest = async () => {
+        try {
+            const res = await fetch('http://localhost:8000/intelligence/latest');
+            const data = await res.json();
+            setLatestEvents(data);
+        } catch (e) {
+            console.error("Failed to fetch latest:", e);
+        }
+    };
+
+    const handleSearch = async (e) => {
+        e.preventDefault();
+        if (!query.trim()) return;
+
+        setIsSearching(true);
+        setActiveTab('search');
+        try {
+            const res = await fetch(`http://localhost:8000/intelligence/search?q=${encodeURIComponent(query)}`);
+            const data = await res.json();
+            setResults(data);
+        } catch (e) {
+            console.error("Search failed:", e);
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    const triggerProcessing = async () => {
+        await fetch('http://localhost:8000/intelligence/process', { method: 'POST' });
+        alert("Background processing started! Check terminal for progress.");
+    };
+
+    const VideoModal = ({ video, onClose }) => {
+        if (!video) return null;
+        return (
+            <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+                <div className="bg-gray-900 rounded-lg max-w-4xl w-full p-4 border border-cyan-500/30">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-xl font-bold text-cyan-400">Analysis Replay</h3>
+                        <button onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
+                    </div>
+                    <div className="aspect-video bg-black rounded border border-gray-800 mb-4 relative">
+                        <video
+                            src={`http://localhost:8000/recordings/${video.filename}`}
+                            controls
+                            autoPlay
+                            className="w-full h-full object-contain"
+                        />
+                        <div className="absolute bottom-4 left-4 right-4 bg-black/60 p-2 text-white text-sm rounded">
+                            <span className="text-cyan-400 font-bold">{video.timestamp}s:</span> {video.description}
+                        </div>
+                    </div>
+                    <div className="text-xs text-gray-500 font-mono">
+                        FILE: {video.filename} | SCORE: {video.score ? video.score.toFixed(3) : 'N/A'}
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     // Filter Logic
     const getFilteredResults = () => {
