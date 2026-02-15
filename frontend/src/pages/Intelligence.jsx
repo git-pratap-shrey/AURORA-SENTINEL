@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useEffect } from 'react';
 import { API_BASE_URL } from '../config';
-import { Box, Typography, Paper, Grid, Button, IconButton, LinearProgress, Drawer, List, ListItem, alpha, useTheme, Chip, Divider, CircularProgress, Snackbar, Alert } from '@mui/material';
+import { Box, Typography, Paper, Grid, Button, IconButton, LinearProgress, Drawer, List, ListItem, alpha, useTheme, Chip, Divider, CircularProgress, Snackbar, Alert, Slider } from '@mui/material';
 import { Upload, FileVideo, X, Play, Shield, Search, ChevronRight, AlertTriangle, CheckCircle2, Clock, Activity, Users, Target, Rewind, Maximize2, FileText } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import jsPDF from 'jspdf';
@@ -199,7 +199,7 @@ const Intelligence = () => {
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2 }}>
                     <Button variant="contained" color="secondary" onClick={() => setSearchOpen(true)} startIcon={<Search size={18} />} sx={{ borderRadius: 2, fontWeight: 700 }}>
-                        Archive Search
+                        VLM Search
                     </Button>
                     {analysisResult && (
                         <Button variant="outlined" onClick={() => setDrawerOpen(true)} startIcon={<Activity size={18} />} sx={{ borderRadius: 2, fontWeight: 700 }}>
@@ -220,9 +220,9 @@ const Intelligence = () => {
                                     <Shield size={20} color={theme.palette.primary.main} /> Contextual Intelligence Settings
                                 </Typography>
                                 <Grid container spacing={3}>
-                                    <Grid item xs={12} md={4}>
+                                    <Grid item xs={12} md={5}>
                                         <Typography variant="caption" sx={{ fontWeight: 900, mb: 1, display: 'block', opacity: 0.6 }}>LOCATION TYPE</Typography>
-                                        <Box sx={{ display: 'flex', gap: 1 }}>
+                                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                                             {['public', 'secure_facility', 'private_property'].map((loc) => (
                                                 <Chip
                                                     key={loc}
@@ -238,18 +238,18 @@ const Intelligence = () => {
                                     <Grid item xs={12} md={4}>
                                         <Typography variant="caption" sx={{ fontWeight: 900, mb: 1, display: 'block', opacity: 0.6 }}>BASE SENSITIVITY ({sensitivity}x)</Typography>
                                         <Box sx={{ px: 2 }}>
-                                            <input
-                                                type="range"
-                                                min="0.5"
-                                                max="2.0"
-                                                step="0.1"
+                                            <Slider
+                                                min={0.5}
+                                                max={2.0}
+                                                step={0.1}
                                                 value={sensitivity}
-                                                onChange={(e) => setSensitivity(parseFloat(e.target.value))}
-                                                style={{ width: '100%', accentColor: theme.palette.primary.main }}
+                                                onChange={(e, val) => setSensitivity(val)}
+                                                sx={{ color: theme.palette.primary.main }}
+                                                valueLabelDisplay="auto"
                                             />
                                         </Box>
                                     </Grid>
-                                    <Grid item xs={12} md={4}>
+                                    <Grid item xs={12} md={3}>
                                         <Typography variant="caption" sx={{ fontWeight: 900, mb: 1, display: 'block', opacity: 0.6 }}>RECORDING HOUR (0-23)</Typography>
                                         <input
                                             type="number"

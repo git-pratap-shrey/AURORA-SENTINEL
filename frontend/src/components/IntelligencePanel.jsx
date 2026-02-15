@@ -80,7 +80,7 @@ const IntelligencePanel = () => {
             <div className="p-4 border-b border-cyan-900/30">
                 <div className="flex items-center gap-2 mb-4">
                     <Brain className="w-6 h-6 text-purple-400" />
-                    <h2 className="text-lg font-bold text-white tracking-wider">CORTEX ARCHIVE</h2>
+                    <h2 className="text-lg font-bold text-white tracking-wider">CORTEX VLM SEARCH</h2>
                 </div>
 
                 {/* Search Bar */}
