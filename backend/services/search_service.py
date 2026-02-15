@@ -46,8 +46,11 @@ class SearchService:
                     documents=[text],
                     metadatas=[{
                         "filename": video_filename,
-                        "timestamp": event['timestamp'],
-                        "provider": event['provider'] or "unknown"
+                        "timestamp": format(event['timestamp'], ".2f"),  # Ensure float consistency
+                        "provider": event.get('provider', "unknown"),
+                        "severity": event.get('severity', "low"),
+                        "threats": ",".join(event.get('threats', [])),  # Chroma doesn't support lists in metadata
+                        "confidence": event.get('confidence', 0)
                     }]
                 )
                 count += 1

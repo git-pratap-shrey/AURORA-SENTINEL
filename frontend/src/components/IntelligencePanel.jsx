@@ -2,77 +2,31 @@ import React, { useState, useEffect } from 'react';
 import { Search, Brain, Play, Clock, AlertTriangle, Activity } from 'lucide-react';
 
 const IntelligencePanel = () => {
-    const [activeTab, setActiveTab] = useState('latest'); // 'latest' or 'search'
-    const [query, setQuery] = useState('');
-    const [results, setResults] = useState([]);
-    const [latestEvents, setLatestEvents] = useState([]);
-    const [isSearching, setIsSearching] = useState(false);
-    const [selectedVideo, setSelectedVideo] = useState(null);
+    const [selectedSeverity, setSelectedSeverity] = useState('ALL');
+    const [selectedThreat, setSelectedThreat] = useState(null);
 
-    // Fetch latest insights on mount
-    useEffect(() => {
-        fetchLatest();
-    }, []);
-
-    const fetchLatest = async () => {
-        try {
-            const res = await fetch('http://localhost:8000/intelligence/latest');
-            const data = await res.json();
-            setLatestEvents(data);
-        } catch (e) {
-            console.error("Failed to fetch latest:", e);
-        }
+    // Filter Logic
+    const getFilteredResults = () => {
+        const source = activeTab === 'latest' ? latestEvents : results;
+        return source.filter(item => {
+            // Severity Filter
+            if (selectedSeverity !== 'ALL') {
+                const itemSev = (item.severity || 'low').toUpperCase();
+                if (itemSev !== selectedSeverity) return false;
+            }
+            // Threat Filter
+            if (selectedThreat) {
+                const threats = (item.threats || []).map(t => t.toLowerCase());
+                const desc = (item.description || '').toLowerCase();
+                const term = selectedThreat.toLowerCase();
+                // Check structured threats OR description fallback
+                if (!threats.includes(term) && !desc.includes(term)) return false;
+            }
+            return true;
+        });
     };
 
-    const handleSearch = async (e) => {
-        e.preventDefault();
-        if (!query.trim()) return;
-
-        setIsSearching(true);
-        setActiveTab('search');
-        try {
-            const res = await fetch(`http://localhost:8000/intelligence/search?q=${encodeURIComponent(query)}`);
-            const data = await res.json();
-            setResults(data);
-        } catch (e) {
-            console.error("Search failed:", e);
-        } finally {
-            setIsSearching(false);
-        }
-    };
-
-    const triggerProcessing = async () => {
-        await fetch('http://localhost:8000/intelligence/process', { method: 'POST' });
-        alert("Background processing started! Check terminal for progress.");
-    };
-
-    const VideoModal = ({ video, onClose }) => {
-        if (!video) return null;
-        return (
-            <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-                <div className="bg-gray-900 rounded-lg max-w-4xl w-full p-4 border border-cyan-500/30">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-xl font-bold text-cyan-400">Analysis Replay</h3>
-                        <button onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
-                    </div>
-                    <div className="aspect-video bg-black rounded border border-gray-800 mb-4 relative">
-                        <video
-                            src={`http://localhost:8000/recordings/${video.filename}`}
-                            controls
-                            autoPlay
-                            className="w-full h-full object-contain"
-                        />
-                        <div className="absolute bottom-4 left-4 right-4 bg-black/60 p-2 text-white text-sm rounded">
-                            <span className="text-cyan-400 font-bold">{video.timestamp}s:</span> {video.description}
-                        </div>
-                    </div>
-                    <div className="text-xs text-gray-500 font-mono">
-                        FILE: {video.filename} | SCORE: {video.score ? video.score.toFixed(3) : 'N/A'}
-                    </div>
-                </div>
-            </div>
-        );
-    };
+    const filteredResults = getFilteredResults();
 
     return (
         <div className="bg-gray-900 border-l border-cyan-900/30 h-full flex flex-col w-96">
@@ -84,7 +38,7 @@ const IntelligencePanel = () => {
                 </div>
 
                 {/* Search Bar */}
-                <form onSubmit={handleSearch} className="relative">
+                <form onSubmit={handleSearch} className="relative mb-3">
                     <input
                         type="text"
                         placeholder='Search "man with knife"...'
@@ -97,7 +51,42 @@ const IntelligencePanel = () => {
                     </button>
                 </form>
 
-                <div className="flex gap-2 mt-4 text-xs font-mono">
+                {/* FILTERS */}
+                <div className="space-y-2 mb-2">
+                    {/* Severity Tabs */}
+                    <div className="flex bg-black/40 rounded p-1 gap-1">
+                        {['ALL', 'HIGH', 'MEDIUM', 'LOW'].map(sev => (
+                            <button
+                                key={sev}
+                                onClick={() => setSelectedSeverity(sev)}
+                                className={`flex-1 text-[10px] font-bold py-1 rounded transition-colors ${selectedSeverity === sev
+                                    ? 'bg-purple-600/80 text-white'
+                                    : 'text-gray-500 hover:text-gray-300'
+                                    }`}
+                            >
+                                {sev}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Threat Chips */}
+                    <div className="flex flex-wrap gap-1.5">
+                        {['GUN', 'KNIFE', 'FIGHT', 'FIRE', 'BLOOD'].map(threat => (
+                            <button
+                                key={threat}
+                                onClick={() => setSelectedThreat(selectedThreat === threat ? null : threat)}
+                                className={`text-[9px] px-2 py-0.5 rounded border transition-colors ${selectedThreat === threat
+                                    ? 'bg-red-500/20 border-red-500 text-red-200'
+                                    : 'bg-transparent border-gray-700 text-gray-500 hover:border-gray-500'
+                                    }`}
+                            >
+                                {threat}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="flex gap-2 mt-2 text-xs font-mono border-t border-gray-800 pt-3">
                     <button
                         onClick={() => setActiveTab('latest')}
                         className={`px-3 py-1 rounded ${activeTab === 'latest' ? 'bg-cyan-900/50 text-cyan-300' : 'text-gray-500 hover:text-gray-300'}`}
@@ -122,11 +111,15 @@ const IntelligencePanel = () => {
                     <div className="text-center text-gray-500 animate-pulse mt-10">Searching Neural Index...</div>
                 )}
 
-                {activeTab === 'search' && !isSearching && results.length === 0 && (
+                {activeTab === 'search' && !isSearching && filteredResults.length === 0 && (
                     <div className="text-center text-gray-600 mt-10 text-sm">No semantic matches found.</div>
                 )}
 
-                {(activeTab === 'latest' ? latestEvents : results).map((item, idx) => {
+                {activeTab === 'latest' && filteredResults.length === 0 && (
+                    <div className="text-center text-gray-600 mt-10 text-sm">No recent events match filters.</div>
+                )}
+
+                {filteredResults.map((item, idx) => {
                     // Determine color based on matching score (for search) or severity (for latest)
                     // Search results have 'score' (distance? No, cosine similarity usually. 0-1)
                     // Note: Chroma return distance by default? We need to accept SearchService behavior.
