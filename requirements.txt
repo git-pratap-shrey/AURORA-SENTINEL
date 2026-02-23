@@ -10,7 +10,14 @@ scipy
 
 # Video processing
 ffmpeg-python
+ffmpeg-python
 moviepy
+chromadb
+sentence-transformers
+transformers
+librosa
+soundfile
+accelerate
 
 # Backend
 fastapi

@@ -1,7 +1,10 @@
+from dotenv import load_dotenv
+load_dotenv() # MUST BE FIRST
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.db.database import engine, Base
-from backend.api.routers import alerts, analytics, video, stream, archive
+from backend.api.routers import alerts, analytics, video, stream, archive, stream_vlm, intelligence
 from backend.services.ml_service import ml_service
 import os
 
@@ -11,6 +14,8 @@ Base.metadata.create_all(bind=engine)
 # Initialize FastAPI
 app = FastAPI(title="AURORA-SENTINEL API", version="2.0.0")
 
+from fastapi.staticfiles import StaticFiles
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -19,6 +24,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve recorded videos
+app.mount("/recordings", StaticFiles(directory="storage/recordings"), name="recordings")
 
 from fastapi.responses import JSONResponse
 from fastapi import Request
@@ -46,9 +54,11 @@ async def startup_event():
 # Include Routers
 app.include_router(alerts.router, prefix="/alerts", tags=["Alerts"])
 app.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
-app.include_router(stream.router, prefix="/ws", tags=["Live Stream"])
-app.include_router(video.router, tags=["Video Processing"])
+app.include_router(stream.router, prefix="/ws", tags=["Live Stream"]) # Mounts at /ws/live-feed
+app.include_router(stream_vlm.router, prefix="/vlm", tags=["Intelligent Stream"]) # Mounts at /vlm/vlm-feed
+app.include_router(video.router, tags=["Video Processing"]) # Mounts at /process/video (explicit in router)
 app.include_router(archive.router, prefix="/archive", tags=["Archive"])
+app.include_router(intelligence.router, prefix="/intelligence", tags=["Intelligence"]) # NEW
 
 # Serve Static Files (Frontend)
 from fastapi.staticfiles import StaticFiles

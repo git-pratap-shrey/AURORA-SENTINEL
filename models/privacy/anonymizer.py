@@ -35,13 +35,22 @@ class PrivacyAnonymizer:
                     x_min, y_min = np.min(v_kpts, axis=0)
                     x_max, y_max = np.max(v_kpts, axis=0)
                     
-                    # Add padding based on person height
+                    # Add padding based on person height (Increased for safety)
                     p_height = pose['bbox'][3] - pose['bbox'][1]
-                    padding = p_height * 0.15
+                    padding = p_height * 0.3 # Increased from 0.15 to 0.3 for better coverage
                     
                     x, y = int(x_min - padding), int(y_min - padding)
                     w, h = int((x_max - x_min) + 2*padding), int((y_max - y_min) + 2*padding)
-                    face_rects.append((x, y, w, h))
+                    
+                    # Boundary checks to prevent crashing or weird crops
+                    h_img, w_img = frame.shape[:2]
+                    x = max(0, x)
+                    y = max(0, y)
+                    w = min(w, w_img - x)
+                    h = min(h, h_img - y)
+                    
+                    if w > 0 and h > 0:
+                        face_rects.append((x, y, w, h))
         
         # 2. Add Haar detections if YOLO missed or wasn't provided
         if self.face_cascade is not None and not face_rects:
@@ -50,7 +59,15 @@ class PrivacyAnonymizer:
                 gray, scaleFactor=1.2, minNeighbors=5, minSize=(30, 30)
             )
             for (x, y, w, h) in haar_faces:
-                face_rects.append((x, y, w, h))
+                # Apply padding to Haar too!
+                padding = h * 0.3 
+                x = max(0, int(x - padding))
+                y = max(0, int(y - padding))
+                w = min(frame.shape[1] - x, int(w + 2*padding))
+                h = min(frame.shape[0] - y, int(h + 2*padding))
+                
+                if w > 0 and h > 0:
+                    face_rects.append((x, y, w, h))
                 
         return face_rects
 
