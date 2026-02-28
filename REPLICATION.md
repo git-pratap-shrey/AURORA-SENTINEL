@@ -130,16 +130,36 @@ cd ..
 
 ---
 
-## Step 8 — Get Model Weights
+## Step 8 — Extract Large Assets (Shared RAR)
 
-The standard YOLO weights (`yolov8n.pt`, `yolov8s.pt`, `yolov8n-pose.pt`) are in the repo.
+Certain files are too large for GitHub and are shared separately as **`aurora_large_assets.rar`**.
+Request this file from the project owner.
 
-The custom weapon detection model `wepon.pt` (~250 MB) **cannot be stored on GitHub** (exceeds 100 MB limit).  
-Get it from the shared drive / team link and place it in the **project root**:
+### What's inside the RAR
+
+| File / Folder | Size | Purpose |
+|---|---|---|
+| `wepon.pt` | ~250 MB | Custom weapon detection model |
+| `yolov8n.pt` | ~6 MB | YOLOv8 Nano — general detection |
+| `yolov8s.pt` | ~22 MB | YOLOv8 Small — general detection |
+| `yolov8n-pose.pt` | ~6 MB | YOLOv8 pose estimation |
+| `data/` | ~950 MB | Sample surveillance videos for testing |
+
+### How to extract
+
+Extract the RAR **directly into the project root** (same folder as `requirements.txt`):
+
 ```
-AURORA-SENTINEL/
-└── wepon.pt   ← place here
+AURORA-SENTINEL/        ← extract here (overwrite if prompted)
+├── wepon.pt
+├── yolov8n.pt
+├── yolov8s.pt
+├── yolov8n-pose.pt
+└── data/
 ```
+
+> **Windows:** Right-click `aurora_large_assets.rar` → *Extract Here* (WinRAR / 7-Zip)  
+> **macOS/Linux:** `unrar x aurora_large_assets.rar /path/to/AURORA-SENTINEL/`
 
 ---
 
@@ -186,6 +206,6 @@ npm start
 | `ffmpeg not found` | FFmpeg binary not in PATH — reinstall and check PATH |
 | `ollama: connection refused` | Ollama not running — open Ollama app or run `ollama serve` |
 | Port 8000 in use | `netstat -ano \| findstr :8000` → `taskkill /PID <pid> /F` |
-| `wepon.pt not found` | Download from shared drive and place in project root |
+| `wepon.pt not found` | Extract `aurora_large_assets.rar` into the project root (Step 8) |
 | Torch GPU not detected | Install CUDA-compatible torch (Step 4 Option B) |
 | `npm: command not found` | Install Node.js from nodejs.org |
