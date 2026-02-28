@@ -5,9 +5,9 @@ import os
 sys.path.append(os.getcwd())
 
 try:
-    from models.detection.detector import UnifiedDetector
-    from models.scoring.risk_engine import RiskScoringEngine
-    from models.privacy.anonymizer import PrivacyAnonymizer
+    from ml_models.detection.detector import UnifiedDetector
+    from ml_models.scoring.risk_engine import RiskScoringEngine
+    from ml_models.privacy.anonymizer import PrivacyAnonymizer
 except ImportError:
     print("Warning: Could not import machine learning models.")
     UnifiedDetector = None

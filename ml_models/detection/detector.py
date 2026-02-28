@@ -1,9 +1,13 @@
 import cv2
 import numpy as np
+from pathlib import Path
 from ultralytics import YOLO
 import torch
 from concurrent.futures import ThreadPoolExecutor
 import time
+
+# Absolute path to the weights/ directory (two levels up from this file)
+WEIGHTS_DIR = Path(__file__).parents[2] / "weights"
 
 class UnifiedDetector:
     """
@@ -24,22 +28,22 @@ class UnifiedDetector:
         print("Loading detection models...")
         try:
             # Main object detection model
-            self.object_model = YOLO('yolov8n.pt')
+            self.object_model = YOLO(WEIGHTS_DIR / 'yolov8n.pt')
             self.object_model.to(self.device)
             
             # Pose estimation model
-            self.pose_model = YOLO('yolov8n-pose.pt')
+            self.pose_model = YOLO(WEIGHTS_DIR / 'yolov8n-pose.pt')
             self.pose_model.to(self.device)
             
-            # Weapon detection model (NEW)
-            self.weapon_model = YOLO('wepon.pt')
+            # Weapon detection model
+            self.weapon_model = YOLO(WEIGHTS_DIR / 'wepon.pt')
             self.weapon_model.to(self.device)
             
         except Exception as e:
-            print(f"Warning: Failed to load models on {self.device}, falling back to CPU or raising error: {e}")
-            self.object_model = YOLO('yolov8n.pt')
-            self.pose_model = YOLO('yolov8n-pose.pt')
-            self.weapon_model = YOLO('wepon.pt')
+            print(f"Warning: Failed to load models on {self.device}, falling back to CPU: {e}")
+            self.object_model = YOLO(WEIGHTS_DIR / 'yolov8n.pt')
+            self.pose_model = YOLO(WEIGHTS_DIR / 'yolov8n-pose.pt')
+            self.weapon_model = YOLO(WEIGHTS_DIR / 'wepon.pt')
             self.device = 'cpu'
         
         # Classes of interest

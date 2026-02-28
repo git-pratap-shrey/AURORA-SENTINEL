@@ -1,8 +1,10 @@
 from dotenv import load_dotenv
 load_dotenv() # MUST BE FIRST
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse, FileResponse
 from backend.db.database import engine, Base
 from backend.api.routers import alerts, analytics, video, stream, archive, stream_vlm, intelligence
 from backend.services.ml_service import ml_service
@@ -13,8 +15,6 @@ Base.metadata.create_all(bind=engine)
 
 # Initialize FastAPI
 app = FastAPI(title="AURORA-SENTINEL API", version="2.0.0")
-
-from fastapi.staticfiles import StaticFiles
 
 # CORS middleware
 app.add_middleware(
@@ -28,8 +28,6 @@ app.add_middleware(
 # Serve recorded videos
 app.mount("/recordings", StaticFiles(directory="storage/recordings"), name="recordings")
 
-from fastapi.responses import JSONResponse
-from fastapi import Request
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -61,9 +59,6 @@ app.include_router(archive.router, prefix="/archive", tags=["Archive"])
 app.include_router(intelligence.router, prefix="/intelligence", tags=["Intelligence"]) # NEW
 
 # Serve Static Files (Frontend)
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-
 # Check if build directory exists
 if os.path.exists("frontend/build"):
     app.mount("/", StaticFiles(directory="frontend/build", html=True), name="frontend")

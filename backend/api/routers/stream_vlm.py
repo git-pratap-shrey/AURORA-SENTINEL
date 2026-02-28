@@ -1,7 +1,7 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from backend.services.ml_service import ml_service
 from backend.services.video_storage_service import video_storage_service
-from backend.services.vlm_service import vlm_service # NEW
+from backend.services.perception.vlm_service import vlm_service
 from backend.db.database import SessionLocal
 from backend.db.models import Alert
 import cv2

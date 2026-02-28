@@ -6,7 +6,7 @@ from datetime import datetime
 import tempfile
 import shutil
 from backend.services.ml_service import ml_service
-from models.scoring.risk_engine import RiskScoringEngine
+from ml_models.scoring.risk_engine import RiskScoringEngine
 from backend.db.database import SessionLocal
 from backend.db.models import Alert
 

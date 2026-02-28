@@ -11,7 +11,9 @@ from dotenv import load_dotenv
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 load_dotenv()
 
-from backend.services.vlm_service import vlm_service
+from backend.services.perception.vlm_service import vlm_service
+from backend.services.perception.audio_service import audio_service
+from backend.services.search.search_service import search_service
 
 class OfflineProcessor:
     def __init__(self, storage_dir="storage/recordings", metadata_file="storage/metadata.json"):
@@ -138,7 +140,6 @@ class OfflineProcessor:
         # ---------------------------------------------------------------------
         # AUDIO ANALYSIS (New Phase)
         # ---------------------------------------------------------------------
-        from backend.services.audio_service import audio_service
         
         print("  Starting Audio Analysis...")
         audio_events = audio_service.analyze_video(video_path)
@@ -164,7 +165,6 @@ class OfflineProcessor:
         print(f"Finished processing {video_filename}. Metadata saved.")
         
         # Index into Vector DB for RAG
-        from backend.services.search_service import search_service
         print("Indexing into Vector DB...")
         search_service.index_metadata()
 

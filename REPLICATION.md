@@ -139,22 +139,24 @@ Request this file from the project owner.
 
 | File / Folder | Size | Purpose |
 |---|---|---|
-| `wepon.pt` | ~250 MB | Custom weapon detection model |
-| `yolov8n.pt` | ~6 MB | YOLOv8 Nano — general detection |
-| `yolov8s.pt` | ~22 MB | YOLOv8 Small — general detection |
-| `yolov8n-pose.pt` | ~6 MB | YOLOv8 pose estimation |
+| `weights/wepon.pt` | ~250 MB | Custom weapon detection model |
+| `weights/yolov8n.pt` | ~6 MB | YOLOv8 Nano — general detection |
+| `weights/yolov8s.pt` | ~22 MB | YOLOv8 Small — general detection |
+| `weights/yolov8n-pose.pt` | ~6 MB | YOLOv8 pose estimation |
 | `data/` | ~950 MB | Sample surveillance videos for testing |
 
 ### How to extract
 
-Extract the RAR **directly into the project root** (same folder as `requirements.txt`):
+Extract the RAR **directly into the project root** (same folder as `requirements.txt`).
+The archive preserves the `weights/` folder structure — it will drop files in the right place automatically:
 
 ```
-AURORA-SENTINEL/        ← extract here (overwrite if prompted)
-├── wepon.pt
-├── yolov8n.pt
-├── yolov8s.pt
-├── yolov8n-pose.pt
+AURORA-SENTINEL/
+├── weights/
+│   ├── wepon.pt
+│   ├── yolov8n.pt
+│   ├── yolov8s.pt
+│   └── yolov8n-pose.pt
 └── data/
 ```
 
@@ -206,6 +208,6 @@ npm start
 | `ffmpeg not found` | FFmpeg binary not in PATH — reinstall and check PATH |
 | `ollama: connection refused` | Ollama not running — open Ollama app or run `ollama serve` |
 | Port 8000 in use | `netstat -ano \| findstr :8000` → `taskkill /PID <pid> /F` |
-| `wepon.pt not found` | Extract `aurora_large_assets.rar` into the project root (Step 8) |
+| `wepon.pt not found` | Extract `aurora_large_assets.rar` into the `weights/` folder (Step 8) |
 | Torch GPU not detected | Install CUDA-compatible torch (Step 4 Option B) |
 | `npm: command not found` | Install Node.js from nodejs.org |

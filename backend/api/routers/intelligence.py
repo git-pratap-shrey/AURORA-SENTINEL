@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from typing import List, Optional
-from backend.services.search_service import SearchService
-from backend.services.offline_processor import OfflineProcessor
+from backend.services.search.search_service import SearchService
+from backend.services.perception.offline_processor import OfflineProcessor
 import os
 
 router = APIRouter()
