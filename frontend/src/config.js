@@ -1,8 +1,17 @@
-// ============================================================
-//  CHANGE THIS ONE URL when you get a new Cloudflare tunnel
-// ============================================================
-export const BACKEND_URL = 'https://YOUR-TUNNEL-URL.trycloudflare.com';
-// ============================================================
+const getApiBaseUrl = () => {
+    if (process.env.NODE_ENV === 'production') {
+        return '';
+    }
+    return 'http://localhost:8000';
+};
 
-export const API_BASE_URL = BACKEND_URL;
-export const WS_BASE_URL = BACKEND_URL.replace('https://', 'wss://');
+const getWsBaseUrl = () => {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    if (process.env.NODE_ENV === 'production') {
+        return `${protocol}//${window.location.host}`;
+    }
+    return `ws://localhost:8000`;
+};
+
+export const API_BASE_URL = getApiBaseUrl();
+export const WS_BASE_URL = getWsBaseUrl();
