@@ -1,0 +1,125 @@
+{
+  "fight_1": {
+    "frames_analyzed": 30,
+    "ml_mean": 59.07267666666665,
+    "ml_max": 67.67249999999999,
+    "ai_mean": 6.5,
+    "ai_max": 15.0,
+    "correlation": 0.8629116056334428,
+    "divergent_frames": 30,
+    "divergent_details": [
+      {
+        "frame": 0,
+        "ml_score": 67.67249999999999,
+        "ai_score": 15.0,
+        "difference": 52.672499999999985
+      },
+      {
+        "frame": 1,
+        "ml_score": 66.6575,
+        "ai_score": 15.0,
+        "difference": 51.6575
+      },
+      {
+        "frame": 2,
+        "ml_score": 65.39399999999999,
+        "ai_score": 15.0,
+        "difference": 50.39399999999999
+      },
+      {
+        "frame": 3,
+        "ml_score": 65.39399999999999,
+        "ai_score": 15.0,
+        "difference": 50.39399999999999
+      },
+      {
+        "frame": 4,
+        "ml_score": 65.39399999999999,
+        "ai_score": 15.0,
+        "difference": 50.39399999999999
+      }
+    ]
+  },
+  "fight_2": {
+    "frames_analyzed": 30,
+    "ml_mean": 24.773667999999997,
+    "ml_max": 45.288340000000005,
+    "ai_mean": 0.0,
+    "ai_max": 0.0,
+    "correlation": NaN,
+    "divergent_frames": 9,
+    "divergent_details": [
+      {
+        "frame": 0,
+        "ml_score": 44.37554,
+        "ai_score": 0.0,
+        "difference": 44.37554
+      },
+      {
+        "frame": 1,
+        "ml_score": 45.288340000000005,
+        "ai_score": 0.0,
+        "difference": 45.288340000000005
+      },
+      {
+        "frame": 2,
+        "ml_score": 44.62334000000001,
+        "ai_score": 0.0,
+        "difference": 44.62334000000001
+      },
+      {
+        "frame": 3,
+        "ml_score": 42.13834,
+        "ai_score": 0.0,
+        "difference": 42.13834
+      },
+      {
+        "frame": 4,
+        "ml_score": 39.90184,
+        "ai_score": 0.0,
+        "difference": 39.90184
+      }
+    ]
+  },
+  "boxing": {
+    "frames_analyzed": 30,
+    "ml_mean": 38.63838533333333,
+    "ml_max": 45.8388,
+    "ai_mean": 0.0,
+    "ai_max": 0.0,
+    "correlation": NaN,
+    "divergent_frames": 30,
+    "divergent_details": [
+      {
+        "frame": 0,
+        "ml_score": 30.877980000000004,
+        "ai_score": 0.0,
+        "difference": 30.877980000000004
+      },
+      {
+        "frame": 1,
+        "ml_score": 32.54034,
+        "ai_score": 0.0,
+        "difference": 32.54034
+      },
+      {
+        "frame": 2,
+        "ml_score": 34.2027,
+        "ai_score": 0.0,
+        "difference": 34.2027
+      },
+      {
+        "frame": 3,
+        "ml_score": 35.86505999999999,
+        "ai_score": 0.0,
+        "difference": 35.86505999999999
+      },
+      {
+        "frame": 4,
+        "ml_score": 37.52741999999999,
+        "ai_score": 0.0,
+        "difference": 37.52741999999999
+      }
+    ]
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "test_date": "2026-03-03T17:35:29.216522",
+  "ai_service": "http://localhost:3000",
+  "weighted_confidence": true,
+  "results": {
+    "fight_1": {
+      "max_ml": 30.539759999999998,
+      "max_ai": 27,
+      "max_final": 30.539759999999998,
+      "avg_ml": 24.3620818015873,
+      "avg_ai": 16.8,
+      "avg_final": 24.3620818015873,
+      "avg_confidence": 0.5,
+      "scene_types": [
+        "normal",
+        "real_fight"
+      ],
+      "frames_processed": 10
+    },
+    "fight_2": {
+      "max_ml": 36.1390947368421,
+      "max_ai": 31,
+      "max_final": 36.1390947368421,
+      "avg_ml": 32.48334103198963,
+      "avg_ai": 23.5,
+      "avg_final": 32.48334103198963,
+      "avg_confidence": 0.5,
+      "scene_types": [
+        "normal",
+        "real_fight"
+      ],
+      "frames_processed": 10
+    },
+    "boxing": {
+      "max_ml": 44.792468,
+      "max_ai": 40,
+      "max_final": 44.792468,
+      "avg_ml": 40.97264,
+      "avg_ai": 30.8,
+      "avg_final": 40.97264,
+      "avg_confidence": 0.5,
+      "scene_types": [
+        "normal",
+        "real_fight"
+      ],
+      "frames_processed": 10
+    },
+    "normal_1": {
+      "max_ml": 43.748768,
+      "max_ai": 22,
+      "max_final": 43.748768,
+      "avg_ml": 34.5312632,
+      "avg_ai": 17.2,
+      "avg_final": 34.5312632,
+      "avg_confidence": 0.5,
+      "scene_types": [
+        "normal"
+      ],
+      "frames_processed": 10
+    },
+    "normal_2": {
+      "max_ml": 24.71419999999999,
+      "max_ai": 12,
+      "max_final": 24.71419999999999,
+      "avg_ml": 12.932709999999995,
+      "avg_ai": 6.7,
+      "avg_final": 12.932709999999995,
+      "avg_confidence": 0.5,
+      "scene_types": [
+        "normal"
+      ],
+      "frames_processed": 10
+    },
+    "normal_3": {
+      "max_ml": 2.0942,
+      "max_ai": 1,
+      "max_final": 2.0942,
+      "avg_ml": 2.0942,
+      "avg_ai": 1.0,
+      "avg_final": 2.0942,
+      "avg_confidence": 0.5,
+      "scene_types": [
+        "normal"
+      ],
+      "frames_processed": 10
+    }
+  }
+}

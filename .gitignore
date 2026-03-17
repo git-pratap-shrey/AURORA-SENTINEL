@@ -1,0 +1,115 @@
+# ========================
+# Python
+# ========================
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ========================
+# Node / Frontend
+# ========================
+node_modules/
+**/.cache/
+**/.vite/
+**/dist/
+**/build/
+
+# ========================
+# Environment & Secrets
+# ========================
+.env
+.env.*
+*.env
+
+# ========================
+# Storage & Generated Files
+# ========================
+storage/
+aurora.db
+
+# ========================
+# Large Video Files (>50MB)
+# ========================
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_576_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_247_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_722_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_798_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_453_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_246_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_478_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_439_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_352_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_050_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_877_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_365_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_696_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_781_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_603_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_621_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_801_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_641_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_892_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_758_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_597_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_656_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_704_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_401_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_417_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_606_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_360_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_905_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_828_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_914_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_913_x264.mp4
+data/sample_videos/Normal_Videos_for_Event_Recognition/Normal_Videos_912_x264.mp4
+data/sample_videos/fightvideos/fight_0214.mpeg
+data/sample_videos/fightvideos/fight_0035.mpeg
+data/sample_videos/fightvideos/fight_0081.mpeg
+data/sample_videos/fightvideos/fight_0216.mpeg
+data/sample_videos/fightvideos/fight_0238.mpeg
+data/sample_videos/fightvideos/fight_0131.mpeg
+
+# ========================
+# Test / Temp Video Files
+# ========================
+test_H264.mp4
+test_MJPG.mp4
+test_XVID.mp4
+test_avc1.mp4
+test_mp4v.mp4
+demo_output.mp4
+test_pipeline_video.mp4
+data/sample_videos/tsentinel_input.mp4
+
+# ========================
+# Logs & Debug
+# ========================
+*.log
+*.log.*
+test_results.json
+
+# ========================
+# OS
+# ========================
+.DS_Store
+Thumbs.db
+
+# ========================
+# IDE
+# ========================
+.vscode/
+.idea/
+
+# ========================
+# Hypothesis / Test Cache
+# ========================
+.hypothesis/
+.pytest_cache/

@@ -1,0 +1,556 @@
+import React, { useState, useEffect } from 'react';
+import {
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+    Chip, Button, Box, Typography, IconButton, useTheme, alpha,
+    Tabs, Tab, Dialog, DialogTitle, DialogContent, DialogActions,
+    TextField, MenuItem, Slide, Tooltip
+} from '@mui/material';
+import {
+    CheckCircle, AlertTriangle, Shield, CheckSquare,
+    History, User, Info
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+import { useAuth } from '../context/AuthContext';
+import { API_BASE_URL } from '../config';
+
+// Transitions
+const Transition = React.forwardRef(function Transition(props, ref) {
+    return <Slide direction="up" ref={ref} {...props} />;
+});
+
+// Resolution Options
+const RESOLUTION_TYPES = [
+    { value: 'Threat Neutralized', label: 'Threat Neutralized', color: 'success' },
+    { value: 'False Positive', label: 'False Positive', color: 'info' },
+    { value: 'Escalated to Police', label: 'Escalated to Police', color: 'error' },
+    { value: 'Situation Resolved', label: 'Situation Resolved', color: 'success' },
+    { value: 'Equipment Check', label: 'Equipment Check', color: 'warning' },
+];
+
+const AlertQueue = ({ alerts: propAlerts, onAcknowledge }) => {
+    const { user } = useAuth();
+    const theme = useTheme();
+    const [activeTab, setActiveTab] = useState(0); // 0: Active, 1: History
+    
+    // Filter state
+    const [filterMLScore, setFilterMLScore] = useState(0);
+    const [filterAIScore, setFilterAIScore] = useState(0);
+    const [filterFinalScore, setFilterFinalScore] = useState(0);
+    const [filterSource, setFilterSource] = useState('all');
+
+    // Local state for full list (merged/managed)
+    const [localAlerts, setLocalAlerts] = useState([]);
+    const [historyAlerts, setHistoryAlerts] = useState([]);
+
+    // Dialog State
+    const [openResolve, setOpenResolve] = useState(false);
+    const [selectedAlert, setSelectedAlert] = useState(null);
+    const [resolutionType, setResolutionType] = useState('');
+    const [resolutionNotes, setResolutionNotes] = useState('');
+
+    // Sync props to local for Active tab (simplified for this demo)
+    useEffect(() => {
+        if (propAlerts) {
+            // Apply filters
+            const filtered = propAlerts.filter(alert => {
+                const mlScore = alert.ml_score !== undefined ? alert.ml_score : alert.risk_score;
+                const aiScore = alert.ai_score || 0;
+                const finalScore = alert.final_score || alert.risk_score;
+                const source = alert.detection_source || 'ml';
+                
+                if (mlScore < filterMLScore) return false;
+                if (aiScore < filterAIScore) return false;
+                if (finalScore < filterFinalScore) return false;
+                if (filterSource !== 'all' && source !== filterSource) return false;
+                
+                return true;
+            });
+            setLocalAlerts(filtered);
+        }
+    }, [propAlerts, filterMLScore, filterAIScore, filterFinalScore, filterSource]);
+
+    // Fetch history when tab changes
+    useEffect(() => {
+        if (activeTab === 1) fetchHistory();
+    }, [activeTab]);
+
+    const fetchHistory = async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/alerts/history`);
+            const data = await res.json();
+            setHistoryAlerts(data.alerts);
+        } catch (e) { console.error(e); }
+    };
+
+    const handleAcknowledge = async (alert) => {
+        try {
+            await fetch(`${API_BASE_URL}/alerts/${alert.id}/acknowledge`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ operator_name: user?.name || 'Operator' })
+            });
+            onAcknowledge(); // Refresh parent
+        } catch (error) { console.error(error); }
+    };
+
+    const openResolutionDialog = (alert) => {
+        setSelectedAlert(alert);
+        setResolutionType('');
+        setResolutionNotes('');
+        setOpenResolve(true);
+    };
+
+    const submitResolution = async () => {
+        if (!selectedAlert || !resolutionType) return;
+        try {
+            await fetch(`${API_BASE_URL}/alerts/${selectedAlert.id}/resolve`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    resolution_type: resolutionType,
+                    resolution_notes: resolutionNotes,
+                    operator_name: user?.name || 'Operator'
+                })
+            });
+            setOpenResolve(false);
+            onAcknowledge(); // Refresh parent (Active list)
+            if (activeTab === 1) fetchHistory(); // Refresh history if viewing it
+        } catch (error) { console.error(error); }
+    };
+
+    const getRiskColor = (level, score) => {
+        if (level === 'CRITICAL') return theme.palette.error.main;
+        if (level === 'HIGH') return theme.palette.warning.main;
+        if (level === 'MEDIUM') return theme.palette.info.main;
+        return theme.palette.success.main;
+    };
+
+    // Columns config
+    const renderTable = (data, isHistory) => (
+        <TableContainer sx={{
+            maxHeight: 440,
+            '&::-webkit-scrollbar': { width: '6px' },
+            '&::-webkit-scrollbar-thumb': { bgcolor: alpha(theme.palette.divider, 0.5), borderRadius: '10px' }
+        }}>
+            <Table stickyHeader size="small">
+                <TableHead>
+                    <TableRow>
+                        {['Time', 'Level', 'Camera', 'Risk', 'Status', ...(isHistory ? ['Outcome'] : []), 'Actions'].map((head) => (
+                            <TableCell key={head} sx={{
+                                bgcolor: alpha('#FFFFFF', 0.8),
+                                backdropFilter: 'blur(8px)',
+                                fontWeight: 800,
+                                fontSize: '0.75rem',
+                                color: theme.palette.text.secondary,
+                                borderBottom: `2px solid ${theme.palette.divider}`,
+                                py: 2
+                            }}>
+                                {head.toUpperCase()}
+                            </TableCell>
+                        ))}
+                    </TableRow>
+                </TableHead>
+                <TableBody>
+                    <AnimatePresence mode="popLayout">
+                        {data.map((alert, index) => (
+                            <TableRow
+                                key={alert.id}
+                                component={motion.tr}
+                                layout
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                transition={{ duration: 0.2, delay: index * 0.05 }}
+                                sx={{
+                                    '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.02) },
+                                    transition: 'background-color 0.2s ease',
+                                    borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+                                    // Pulse animation for pending critical
+                                    animation: (alert.status === 'pending' && alert.level === 'CRITICAL') ? 'pulse-red 3s infinite' : 'none',
+                                    bgcolor: alert.status === 'pending' && alert.level === 'CRITICAL' ? alpha(theme.palette.error.main, 0.02) : 'inherit'
+                                }}
+                            >
+                                <TableCell sx={{ py: 2 }}>
+                                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                        <Typography variant="body2" sx={{ fontWeight: 700, color: theme.palette.text.primary }}>
+                                            {new Date(alert.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </Typography>
+                                        <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontSize: '0.65rem' }}>
+                                            {new Date(alert.timestamp).toLocaleDateString()}
+                                        </Typography>
+                                    </Box>
+                                </TableCell>
+                                <TableCell>
+                                    <Chip
+                                        label={alert.level}
+                                        size="small"
+                                        sx={{
+                                            bgcolor: alpha(getRiskColor(alert.level), 0.1),
+                                            color: getRiskColor(alert.level),
+                                            fontWeight: 900,
+                                            height: 22,
+                                            fontSize: '0.65rem',
+                                            borderRadius: '6px',
+                                            letterSpacing: '0.05em',
+                                            border: `1px solid ${alpha(getRiskColor(alert.level), 0.2)}`
+                                        }}
+                                    />
+                                </TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: theme.palette.text.secondary }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        {alert.camera_id}
+                                        {alert.camera_id === 'FORENSIC-01' && (
+                                            <Chip
+                                                label="FORENSIC"
+                                                size="small"
+                                                variant="outlined"
+                                                sx={{
+                                                    height: 18,
+                                                    fontSize: '0.6rem',
+                                                    fontWeight: 900,
+                                                    borderColor: theme.palette.primary.main,
+                                                    color: theme.palette.primary.main
+                                                }}
+                                            />
+                                        )}
+                                    </Box>
+                                </TableCell>
+                                <TableCell>
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                        {/* Final Score (Primary Display) */}
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <Box sx={{
+                                                width: 4,
+                                                height: 20,
+                                                borderRadius: 1,
+                                                bgcolor: getRiskColor(alert.level)
+                                            }} />
+                                            <Typography sx={{ 
+                                                fontWeight: 900, 
+                                                color: theme.palette.text.primary, 
+                                                fontSize: '0.9rem', 
+                                                fontFamily: 'monospace' 
+                                            }}>
+                                                {(alert.final_score || alert.risk_score).toFixed(0)}%
+                                            </Typography>
+                                        </Box>
+                                        
+                                        {/* Two-Tier Scores (if available) */}
+                                        {alert.ml_score !== undefined && alert.ml_score !== null && (
+                                            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                                                <Chip
+                                                    label={`ML: ${alert.ml_score.toFixed(0)}%`}
+                                                    size="small"
+                                                    sx={{
+                                                        height: 18,
+                                                        fontSize: '0.6rem',
+                                                        fontWeight: 700,
+                                                        bgcolor: alpha(theme.palette.primary.main, 0.1),
+                                                        color: theme.palette.primary.main,
+                                                        fontFamily: 'monospace'
+                                                    }}
+                                                />
+                                                <Chip
+                                                    label={`AI: ${(alert.ai_score || 0).toFixed(0)}%`}
+                                                    size="small"
+                                                    sx={{
+                                                        height: 18,
+                                                        fontSize: '0.6rem',
+                                                        fontWeight: 700,
+                                                        bgcolor: alpha(theme.palette.secondary.main, 0.1),
+                                                        color: theme.palette.secondary.main,
+                                                        fontFamily: 'monospace'
+                                                    }}
+                                                />
+                                                {alert.detection_source && (
+                                                    <Chip
+                                                        label={alert.detection_source.toUpperCase()}
+                                                        size="small"
+                                                        variant="outlined"
+                                                        sx={{
+                                                            height: 18,
+                                                            fontSize: '0.55rem',
+                                                            fontWeight: 800,
+                                                            borderColor: alert.detection_source === 'both' ? theme.palette.error.main :
+                                                                        alert.detection_source === 'ml' ? theme.palette.primary.main :
+                                                                        theme.palette.secondary.main,
+                                                            color: alert.detection_source === 'both' ? theme.palette.error.main :
+                                                                   alert.detection_source === 'ml' ? theme.palette.primary.main :
+                                                                   theme.palette.secondary.main
+                                                        }}
+                                                    />
+                                                )}
+                                            </Box>
+                                        )}
+                                    </Box>
+                                </TableCell>
+                                <TableCell>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <Box sx={{
+                                            p: 0.5,
+                                            bgcolor: alert.status === 'pending' ? alpha(theme.palette.error.main, 0.1) :
+                                                alert.status === 'acknowledged' ? alpha(theme.palette.warning.main, 0.1) :
+                                                    alpha(theme.palette.success.main, 0.1),
+                                            borderRadius: '50%',
+                                            display: 'flex'
+                                        }}>
+                                            {alert.status === 'pending' && <AlertTriangle size={12} color={theme.palette.error.main} />}
+                                            {alert.status === 'acknowledged' && <User size={12} color={theme.palette.warning.main} />}
+                                            {alert.status === 'resolved' && <CheckCircle size={12} color={theme.palette.success.main} />}
+                                        </Box>
+                                        <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.65rem' }}>
+                                            {alert.status}
+                                        </Typography>
+                                        
+                                        {/* AI Explanation Tooltip */}
+                                        {alert.ai_explanation && (
+                                            <Tooltip 
+                                                title={
+                                                    <Box sx={{ p: 1 }}>
+                                                        <Typography variant="caption" sx={{ fontWeight: 700, display: 'block', mb: 0.5 }}>
+                                                            AI Analysis:
+                                                        </Typography>
+                                                        <Typography variant="caption" sx={{ display: 'block', mb: 1 }}>
+                                                            {alert.ai_explanation}
+                                                        </Typography>
+                                                        {alert.ai_scene_type && (
+                                                            <Chip 
+                                                                label={alert.ai_scene_type.replace('_', ' ').toUpperCase()}
+                                                                size="small"
+                                                                sx={{ 
+                                                                    height: 16, 
+                                                                    fontSize: '0.55rem',
+                                                                    bgcolor: alert.ai_scene_type === 'real_fight' ? alpha(theme.palette.error.main, 0.2) :
+                                                                            alert.ai_scene_type === 'boxing' ? alpha(theme.palette.info.main, 0.2) :
+                                                                            alpha(theme.palette.success.main, 0.2)
+                                                                }}
+                                                            />
+                                                        )}
+                                                    </Box>
+                                                }
+                                                arrow
+                                                placement="top"
+                                            >
+                                                <IconButton size="small" sx={{ p: 0.5 }}>
+                                                    <Info size={14} color={theme.palette.info.main} />
+                                                </IconButton>
+                                            </Tooltip>
+                                        )}
+                                    </Box>
+                                </TableCell>
+
+                                {isHistory && (
+                                    <TableCell>
+                                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{alert.resolution_type}</Typography>
+                                        <Typography variant="caption" color="text.secondary" noWrap sx={{ maxWidth: 150, display: 'block', fontStyle: 'italic' }}>
+                                            "{alert.resolution_notes}"
+                                        </Typography>
+                                    </TableCell>
+                                )}
+
+                                <TableCell>
+                                    <Box sx={{ display: 'flex', gap: 1 }}>
+                                        {alert.status === 'pending' && (
+                                            <Button
+                                                variant="contained"
+                                                size="small"
+                                                color="warning"
+                                                onClick={() => handleAcknowledge(alert)}
+                                                startIcon={<CheckSquare size={14} />}
+                                                sx={{
+                                                    fontSize: '0.65rem',
+                                                    fontWeight: 800,
+                                                    borderRadius: '6px',
+                                                    boxShadow: 'none',
+                                                    '&:hover': { boxShadow: `0 4px 12px ${alpha(theme.palette.warning.main, 0.3)}` }
+                                                }}
+                                            >
+                                                ACK
+                                            </Button>
+                                        )}
+                                        {alert.status !== 'resolved' && (
+                                            <Button
+                                                variant="outlined"
+                                                size="small"
+                                                color="success"
+                                                onClick={() => openResolutionDialog(alert)}
+                                                sx={{
+                                                    fontSize: '0.65rem',
+                                                    fontWeight: 800,
+                                                    borderRadius: '6px',
+                                                    borderWidth: '2px',
+                                                    '&:hover': { borderWidth: '2px' }
+                                                }}
+                                            >
+                                                RESOLVE
+                                            </Button>
+                                        )}
+                                        {alert.status === 'resolved' && (
+                                            <Chip label="ARCHIVED" size="small" variant="outlined" sx={{ fontSize: '0.6rem', fontWeight: 800 }} />
+                                        )}
+                                    </Box>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </AnimatePresence>
+                </TableBody>
+            </Table>
+            {data.length === 0 && (
+                <Box sx={{ textAlign: 'center', py: 8, opacity: 0.5 }}>
+                    <Shield size={48} color={theme.palette.divider} style={{ marginBottom: 16 }} />
+                    <Typography variant="body1" fontWeight={700}>System Clear</Typography>
+                    <Typography variant="caption">No active threats detected in this queue.</Typography>
+                </Box>
+            )}
+        </TableContainer>
+    );
+
+    return (
+        <React.Fragment>
+            <Box sx={{ width: '100%' }}>
+                {/* Filter Controls */}
+                <Box sx={{ 
+                    display: 'flex', 
+                    gap: 2, 
+                    mb: 2, 
+                    p: 2, 
+                    bgcolor: alpha(theme.palette.background.paper, 0.5),
+                    borderRadius: 1,
+                    border: `1px solid ${theme.palette.divider}`
+                }}>
+                    <TextField
+                        label="Min ML Score"
+                        type="number"
+                        size="small"
+                        value={filterMLScore}
+                        onChange={(e) => setFilterMLScore(Number(e.target.value))}
+                        InputProps={{ inputProps: { min: 0, max: 100 } }}
+                        sx={{ width: 140 }}
+                    />
+                    <TextField
+                        label="Min AI Score"
+                        type="number"
+                        size="small"
+                        value={filterAIScore}
+                        onChange={(e) => setFilterAIScore(Number(e.target.value))}
+                        InputProps={{ inputProps: { min: 0, max: 100 } }}
+                        sx={{ width: 140 }}
+                    />
+                    <TextField
+                        label="Min Final Score"
+                        type="number"
+                        size="small"
+                        value={filterFinalScore}
+                        onChange={(e) => setFilterFinalScore(Number(e.target.value))}
+                        InputProps={{ inputProps: { min: 0, max: 100 } }}
+                        sx={{ width: 140 }}
+                    />
+                    <TextField
+                        label="Detection Source"
+                        select
+                        size="small"
+                        value={filterSource}
+                        onChange={(e) => setFilterSource(e.target.value)}
+                        sx={{ width: 140 }}
+                    >
+                        <MenuItem value="all">All</MenuItem>
+                        <MenuItem value="ml">ML Only</MenuItem>
+                        <MenuItem value="ai">AI Only</MenuItem>
+                        <MenuItem value="both">Both</MenuItem>
+                    </TextField>
+                    <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() => {
+                            setFilterMLScore(0);
+                            setFilterAIScore(0);
+                            setFilterFinalScore(0);
+                            setFilterSource('all');
+                        }}
+                        sx={{ ml: 'auto' }}
+                    >
+                        Clear Filters
+                    </Button>
+                </Box>
+                
+                <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 0 }}>
+                    <Tabs value={activeTab} onChange={(e, v) => setActiveTab(v)}>
+                        <Tab label={`Active Queue (${localAlerts.length})`} icon={<AlertTriangle size={16} />} iconPosition="start" />
+                        <Tab label="Historical Archive" icon={<History size={16} />} iconPosition="start" />
+                    </Tabs>
+                </Box>
+                <Box sx={{ p: 0 }}>
+                    {activeTab === 0 ? renderTable(localAlerts, false) : renderTable(historyAlerts, true)}
+                </Box>
+            </Box>
+
+            {/* Resolution Dialog */}
+            <Dialog
+                open={openResolve}
+                onClose={() => setOpenResolve(false)}
+                TransitionComponent={Transition}
+                fullWidth
+                maxWidth="sm"
+            >
+                <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, bgcolor: '#F8FAFC', borderBottom: `1px solid ${theme.palette.divider}` }}>
+                    <Shield color={theme.palette.primary.main} />
+                    Resolve Alert #{selectedAlert?.id}
+                </DialogTitle>
+                <DialogContent sx={{ mt: 2 }}>
+                    <Box sx={{ my: 2 }}>
+                        <Typography variant="subtitle2" gutterBottom>Resolution Outcome</Typography>
+                        <TextField
+                            select
+                            fullWidth
+                            value={resolutionType}
+                            onChange={(e) => setResolutionType(e.target.value)}
+                            size="small"
+                        >
+                            {RESOLUTION_TYPES.map((option) => (
+                                <MenuItem key={option.value} value={option.value}>
+                                    {option.label}
+                                </MenuItem>
+                            ))}
+                        </TextField>
+                    </Box>
+                    <Box sx={{ my: 2 }}>
+                        <Typography variant="subtitle2" gutterBottom>Incident Notes</Typography>
+                        <TextField
+                            fullWidth
+                            multiline
+                            rows={3}
+                            value={resolutionNotes}
+                            onChange={(e) => setResolutionNotes(e.target.value)}
+                            placeholder="Enter details about the resolution..."
+                            size="small"
+                        />
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{ p: 2, borderTop: `1px solid ${theme.palette.divider}` }}>
+                    <Button onClick={() => setOpenResolve(false)} color="inherit">Cancel</Button>
+                    <Button
+                        onClick={submitResolution}
+                        variant="contained"
+                        color="success"
+                        disabled={!resolutionType}
+                    >
+                        Mark Active & Archive
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <style>
+                {`
+                @keyframes pulse-red {
+                    0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+                    70% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
+                    100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+                }
+                `}
+            </style>
+        </React.Fragment>
+    );
+};
+
+export default AlertQueue;

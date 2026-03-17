@@ -1,0 +1,138 @@
+# Enhanced Fight Detection - Risk Scoring Thresholds Configuration
+# This file contains all configurable parameters for the ML risk engine
+
+# Temporal Validation Settings
+# Controls how risk scores are validated across multiple frames
+temporal:
+  validation_ratio: 0.30  # Percentage of frames that must be high-risk (0.0-1.0)
+                          # Lower = more sensitive, detects brief incidents
+                          # Default: 0.30 (30% of frames)
+  
+  window_size: 20         # Number of frames in validation window
+                          # Smaller = faster detection, less smoothing
+                          # Default: 20 frames (~0.67s at 30fps)
+  
+  suppression_max: 0.4    # Maximum suppression multiplier (0.0-1.0)
+                          # Lower = less dampening of spikes
+                          # Default: 0.4 (max 40% reduction)
+
+# Proximity Detection Settings
+# Controls when people are considered "too close" for potential conflict
+proximity:
+  distance: 0.40          # Distance threshold as ratio of average body height
+                          # Lower = stricter (closer required)
+                          # Default: 0.40 (40% of height)
+  
+  escalation: 3.0         # Escalation weight when aggression detected
+                          # Higher = more aggressive escalation
+                          # Default: 3.0x multiplier
+  
+  baseline_weight: 1.5    # Baseline weight for proximity without aggression
+                          # Default: 1.5
+
+# Strike Velocity Detection Settings
+# Controls detection of rapid limb movements (punches, kicks)
+strike:
+  velocity: 0.40          # Velocity threshold as ratio of body height per frame
+                          # Lower = more sensitive to movement
+                          # Default: 0.40 (40% of height per frame)
+  
+  history_length: 10      # Number of frames to track for velocity calculation
+                          # Default: 10 frames
+
+# Grappling Detection Settings
+# Controls detection of close combat (wrestling, clinching)
+grappling:
+  distance: 0.40          # Distance threshold as ratio of average height
+                          # Default: 0.40 (40% of height)
+  
+  overlap: 0.60           # Bounding box overlap threshold (0.0-1.0)
+                          # Higher = requires more overlap
+                          # Default: 0.60 (60% overlap)
+  
+  persistence_frames: 10  # Frames required for sustained grappling
+                          # Default: 10 frames
+
+# Aggression Scoring Thresholds
+# Controls how aggressive poses are scored
+aggression:
+  raised_arms: 0.7        # Score for both arms raised + wide stance
+                          # Range: 0.0-1.0
+                          # Default: 0.7 (high aggression)
+  
+  strike: 0.5             # Base score for strike motion detected
+                          # Range: 0.0-1.0
+                          # Default: 0.5
+  
+  strike_extended: 0.4    # Additional score if arm extended during strike
+                          # Range: 0.0-1.0
+                          # Default: 0.4
+  
+  fighting_stance: 0.6    # Score for hands near head + wide feet
+                          # Range: 0.0-1.0
+                          # Default: 0.6
+  
+  extended_arms: 0.3      # Score for single extended arm
+                          # Range: 0.0-1.0
+                          # Default: 0.3
+  
+  wide_stance: 0.3        # Score for wide stance alone
+                          # Range: 0.0-1.0
+                          # Default: 0.3
+
+# Risk Score Escalation Settings
+# Controls minimum risk scores for specific scenarios
+escalation:
+  aggression_proximity_min: 0.70  # Min score when aggression > 0.6 + proximity
+                                  # Default: 0.70 (70%)
+  
+  grappling_min: 0.65             # Min score when grappling detected
+                                  # Default: 0.65 (65%)
+  
+  strike_proximity_boost: 0.3     # Score boost for strike + proximity
+                                  # Default: 0.3
+
+# Suppression Factor Bypass Settings
+# Controls when suppression is bypassed for high-confidence detections
+suppression_bypass:
+  high_aggression: 0.6    # Aggression threshold to bypass suppression
+                          # Default: 0.6
+  
+  weapon_detection: 0.4   # Weapon confidence to bypass suppression
+                          # Default: 0.4
+  
+  medium_aggression: 0.5  # Aggression threshold for reduced suppression (0.8 max)
+                          # Default: 0.5
+
+# Two-Tier Scoring Settings
+# Controls ML and AI score integration
+two_tier:
+  alert_threshold: 60.0   # Threshold for triggering AI verification and alerts
+                          # Default: 60.0 (60%)
+  
+  ai_timeout: 5.0         # Timeout for AI verification in seconds
+                          # Default: 5.0 seconds
+
+# Alert Color Coding
+# Controls visual indicators for operators
+alert_colors:
+  red_threshold: 70.0     # Final score threshold for RED alerts
+  orange_threshold: 50.0  # Final score threshold for ORANGE alerts
+  yellow_threshold: 30.0  # Final score threshold for YELLOW alerts
+
+# Validation Ranges
+# These define acceptable ranges for all parameters
+validation:
+  score_min: 0.0
+  score_max: 1.0
+  distance_min: 0.0
+  distance_max: 2.0
+  multiplier_min: 0.0
+  multiplier_max: 10.0
+
+# Notes:
+# - All score values should be between 0.0 and 1.0
+# - Distance values are ratios of body height (typically 0.0-2.0)
+# - Multipliers can be any positive value
+# - Lower thresholds = more sensitive detection
+# - Higher thresholds = fewer false positives

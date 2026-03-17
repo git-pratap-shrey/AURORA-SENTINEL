@@ -1,0 +1,187 @@
+{
+  "created_at": "2026-03-03T21:23:03.170960",
+  "videos": [
+    {
+      "path": "tests/synthetic_data/videos\\fight_1.mp4",
+      "ground_truth": {
+        "filename": "fight_1.mp4",
+        "has_fight": true,
+        "has_weapon": false,
+        "num_persons": 2,
+        "fight_intensity": "high",
+        "duration": 3.0,
+        "fps": 30,
+        "expected_ml_score": ">= 70",
+        "expected_alerts": ">= 1"
+      }
+    },
+    {
+      "path": "tests/synthetic_data/videos\\fight_2.mp4",
+      "ground_truth": {
+        "filename": "fight_2.mp4",
+        "has_fight": true,
+        "has_weapon": false,
+        "num_persons": 2,
+        "fight_intensity": "high",
+        "duration": 3.0,
+        "fps": 30,
+        "expected_ml_score": ">= 70",
+        "expected_alerts": ">= 1"
+      }
+    },
+    {
+      "path": "tests/synthetic_data/videos\\fight_3.mp4",
+      "ground_truth": {
+        "filename": "fight_3.mp4",
+        "has_fight": true,
+        "has_weapon": false,
+        "num_persons": 2,
+        "fight_intensity": "high",
+        "duration": 3.0,
+        "fps": 30,
+        "expected_ml_score": ">= 70",
+        "expected_alerts": ">= 1"
+      }
+    },
+    {
+      "path": "tests/synthetic_data/videos\\fight_4.mp4",
+      "ground_truth": {
+        "filename": "fight_4.mp4",
+        "has_fight": true,
+        "has_weapon": false,
+        "num_persons": 2,
+        "fight_intensity": "high",
+        "duration": 3.0,
+        "fps": 30,
+        "expected_ml_score": ">= 70",
+        "expected_alerts": ">= 1"
+      }
+    },
+    {
+      "path": "tests/synthetic_data/videos\\fight_5.mp4",
+      "ground_truth": {
+        "filename": "fight_5.mp4",
+        "has_fight": true,
+        "has_weapon": false,
+        "num_persons": 2,
+        "fight_intensity": "high",
+        "duration": 3.0,
+        "fps": 30,
+        "expected_ml_score": ">= 70",
+        "expected_alerts": ">= 1"
+      }
+    },
+    {
+      "path": "tests/synthetic_data/videos\\normal_1.mp4",
+      "ground_truth": {
+        "filename": "normal_1.mp4",
+        "has_fight": false,
+        "has_weapon": false,
+        "num_persons": 1,
+        "activity": "standing",
+        "duration": 3.0,
+        "fps": 30,
+        "expected_ml_score": "< 30",
+        "expected_alerts": "0"
+      }
+    },
+    {
+      "path": "tests/synthetic_data/videos\\normal_2.mp4",
+      "ground_truth": {
+        "filename": "normal_2.mp4",
+        "has_fight": false,
+        "has_weapon": false,
+        "num_persons": 1,
+        "activity": "standing",
+        "duration": 3.0,
+        "fps": 30,
+        "expected_ml_score": "< 30",
+        "expected_alerts": "0"
+      }
+    },
+    {
+      "path": "tests/synthetic_data/videos\\normal_3.mp4",
+      "ground_truth": {
+        "filename": "normal_3.mp4",
+        "has_fight": false,
+        "has_weapon": false,
+        "num_persons": 1,
+        "activity": "standing",
+        "duration": 3.0,
+        "fps": 30,
+        "expected_ml_score": "< 30",
+        "expected_alerts": "0"
+      }
+    },
+    {
+      "path": "tests/synthetic_data/videos\\normal_4.mp4",
+      "ground_truth": {
+        "filename": "normal_4.mp4",
+        "has_fight": false,
+        "has_weapon": false,
+        "num_persons": 1,
+        "activity": "standing",
+        "duration": 3.0,
+        "fps": 30,
+        "expected_ml_score": "< 30",
+        "expected_alerts": "0"
+      }
+    },
+    {
+      "path": "tests/synthetic_data/videos\\normal_5.mp4",
+      "ground_truth": {
+        "filename": "normal_5.mp4",
+        "has_fight": false,
+        "has_weapon": false,
+        "num_persons": 1,
+        "activity": "standing",
+        "duration": 3.0,
+        "fps": 30,
+        "expected_ml_score": "< 30",
+        "expected_alerts": "0"
+      }
+    },
+    {
+      "path": "tests/synthetic_data/videos\\weapon_1.mp4",
+      "ground_truth": {
+        "filename": "weapon_1.mp4",
+        "has_fight": false,
+        "has_weapon": true,
+        "weapon_type": "knife",
+        "num_persons": 1,
+        "duration": 3.0,
+        "fps": 30,
+        "expected_ml_score": ">= 80",
+        "expected_alerts": ">= 1"
+      }
+    },
+    {
+      "path": "tests/synthetic_data/videos\\weapon_2.mp4",
+      "ground_truth": {
+        "filename": "weapon_2.mp4",
+        "has_fight": false,
+        "has_weapon": true,
+        "weapon_type": "gun",
+        "num_persons": 1,
+        "duration": 3.0,
+        "fps": 30,
+        "expected_ml_score": ">= 80",
+        "expected_alerts": ">= 1"
+      }
+    },
+    {
+      "path": "tests/synthetic_data/videos\\weapon_3.mp4",
+      "ground_truth": {
+        "filename": "weapon_3.mp4",
+        "has_fight": false,
+        "has_weapon": true,
+        "weapon_type": "knife",
+        "num_persons": 1,
+        "duration": 3.0,
+        "fps": 30,
+        "expected_ml_score": ">= 80",
+        "expected_alerts": ">= 1"
+      }
+    }
+  ]
+}
