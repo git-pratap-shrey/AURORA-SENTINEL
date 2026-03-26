@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import requests
 import base64
@@ -69,7 +70,10 @@ class LocalAIProvider:
 
 # Optional providers: keep backend functional without them installed/configured.
 try:
-    import google.generativeai as genai
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', FutureWarning)
+        import google.generativeai as genai
 except Exception:
     genai = None
 
@@ -185,7 +189,6 @@ class HuggingFaceProvider(VLMProvider):
 
 class OllamaProvider(VLMProvider):
     def __init__(self, model_name=None):
-        import sys, os
         # Add root directory to path to support config.py import
         sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
         try:
@@ -269,7 +272,6 @@ class NemotronProvider:
         try:
             from transformers import AutoModel, AutoProcessor
             import torch
-            import sys, os
             sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
             try:
                 import config
@@ -534,7 +536,6 @@ class ChartQAProvider(VLMProvider):
         try:
             from transformers import pipeline
             import torch
-            import sys, os
             sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
             try:
                 import config
@@ -574,7 +575,6 @@ class Qwen2VLProvider(VLMProvider):
             from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
             from qwen_vl_utils import process_vision_info
             import torch
-            import sys, os
             sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
             try:
                 import config
@@ -692,7 +692,6 @@ class VLMService:
         self.hf = HuggingFaceProvider()
         self.qwen = QwenProvider()
         
-        import sys, os
         sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
         try:
             import config

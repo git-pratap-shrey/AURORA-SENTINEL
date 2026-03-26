@@ -5,10 +5,8 @@
     "dependencies": {
         "@emotion/react": "^11.11.1",
         "@emotion/styled": "^11.11.0",
-        "@mui/icons-material": "^5.14.3",
         "@mui/material": "^5.14.5",
         "axios": "^1.5.0",
-        "clsx": "^2.1.1",
         "date-fns": "^4.1.0",
         "framer-motion": "^12.33.0",
         "jspdf": "^4.1.0",
@@ -23,7 +21,6 @@
         "react-scripts": "^5.0.1",
         "recharts": "^2.8.0",
         "socket.io-client": "^4.7.2",
-        "tailwind-merge": "^3.5.0",
         "web-vitals": "^2.1.4"
     },
     "scripts": {
@@ -36,7 +33,23 @@
         "extends": [
             "react-app",
             "react-app/jest"
-        ]
+        ],
+        "plugins": [
+            "unused-imports"
+        ],
+        "rules": {
+            "no-unused-vars": "off",
+            "unused-imports/no-unused-imports": "error",
+            "unused-imports/no-unused-vars": [
+                "warn",
+                {
+                    "vars": "all",
+                    "varsIgnorePattern": "^_",
+                    "args": "after-used",
+                    "argsIgnorePattern": "^_"
+                }
+            ]
+        }
     },
     "browserslist": {
         "production": [
@@ -51,14 +64,6 @@
         ]
     },
     "devDependencies": {
-        "@tailwindcss/postcss": "^4.2.1",
-        "@types/jest": "^30.0.0",
-        "@types/node": "^25.5.0",
-        "@types/react": "^19.2.14",
-        "@types/react-dom": "^19.2.3",
-        "autoprefixer": "^10.4.27",
-        "postcss": "^8.5.8",
-        "tailwindcss": "^3.3.0",
-        "typescript": "^5.9.3"
+        "eslint-plugin-unused-imports": "^4.4.1"
     }
 }

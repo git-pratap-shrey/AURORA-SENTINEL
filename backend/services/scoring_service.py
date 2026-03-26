@@ -4,9 +4,9 @@ Two-Tier Scoring Service for Enhanced Fight Detection
 This service implements the dual-scoring architecture:
 - ML_Score: Aggressive detection of physical combat patterns (no discrimination)
 - AI_Score: Context-aware verification using vision-language models
-- Final_Score: MAX(ML_Score, AI_Score) for operator alerts
+- Final_Score: Weighted combination (0.3×ML + 0.7×AI) for operator alerts
 
-If EITHER score exceeds the alert threshold (60%), the operator is notified for manual review.
+If the final weighted score exceeds the alert threshold (60%), the operator is notified for manual review.
 """
 
 import asyncio

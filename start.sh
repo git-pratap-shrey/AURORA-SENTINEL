@@ -9,6 +9,8 @@ trap "kill 0" EXIT
 echo -e "\e[33mStarting AI Intelligence Layer (Local Models)...\e[0m"
 if [ -d "./ai-intelligence-layer/venv_ai" ]; then
     (cd ai-intelligence-layer && source venv_ai/bin/activate && python server_local.py) &
+elif [ -d "venv" ]; then
+    (cd ai-intelligence-layer && source ../venv/bin/activate && python server_local.py) &
 elif [ -d "./ai-intelligence-layer/node_modules" ]; then
     (cd ai-intelligence-layer && npm start) &
 else

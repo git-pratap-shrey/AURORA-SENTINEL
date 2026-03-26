@@ -59,7 +59,7 @@ async def startup_event():
 
 # Routers are included below using 'app.include_router'
 
-# ... imports ...
+
 
 # Include Routers
 print("Including alerts router...")
@@ -81,7 +81,6 @@ app.include_router(settings.router, prefix="/settings", tags=["Settings"])
 print("All routers included.")
 
 # Serve Static Files (Frontend)
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 # Check if build directory exists
