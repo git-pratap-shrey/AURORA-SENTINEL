@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Box, Typography, useTheme, alpha, MenuItem, Select, FormControl, Switch, FormControlLabel, Fade } from '@mui/material';
+import { Box, Typography, useTheme, alpha, MenuItem, Select, FormControl, Switch, FormControlLabel, Fade, Slider } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Box as BoxIcon, RefreshCw, BrainCircuit, Shield, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
 import { useSettings } from '../context/SettingsContext';
-import { WS_BASE_URL } from '../config';
+import { WS_BASE_URL, API_BASE_URL } from '../config';
 
 // Global Event Emitter for high-frequency, low-latency UI updates without React layout thrashing
 export const threatEventEmitter = new EventTarget();
@@ -18,6 +18,8 @@ const LiveFeed = ({ isExpanded }) => {
     const [cameraError, setCameraError] = useState(null);
     const { performanceMode } = useSettings();
     const [vlmMode, setVlmMode] = useState(false); // NEW: VLM Mode State
+    const [vlmIntervalSeconds, setVlmIntervalSeconds] = useState(10);
+    const [isVlmIntervalSaving, setIsVlmIntervalSaving] = useState(false);
     const [vitalityPulse, setVitalityPulse] = useState(2);
     const theme = useTheme();
 
@@ -45,6 +47,42 @@ const LiveFeed = ({ isExpanded }) => {
             addNotification({ title: `Camera Error: ${cameraError.slice(0, 30)}...`, level: 'Critical' });
         }
     }, [cameraError, addNotification]);
+
+    useEffect(() => {
+        const fetchVlmInterval = async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/settings/vlm-interval`);
+                if (!res.ok) return;
+                const data = await res.json();
+                if (typeof data.seconds === 'number') {
+                    setVlmIntervalSeconds(data.seconds);
+                }
+            } catch (e) {
+                // Non-fatal, keep local default
+            }
+        };
+        fetchVlmInterval();
+    }, []);
+
+    const persistVlmInterval = async (seconds) => {
+        const normalized = Math.max(2, Math.min(30, Number(seconds) || 10));
+        setVlmIntervalSeconds(normalized);
+        setIsVlmIntervalSaving(true);
+        try {
+            await fetch(`${API_BASE_URL}/settings/vlm-interval`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ seconds: normalized })
+            });
+            if (wsRef.current?.readyState === WebSocket.OPEN) {
+                wsRef.current.send(JSON.stringify({ type: 'set_vlm_interval', seconds: normalized }));
+            }
+        } catch (e) {
+            // Keep UI responsive even if save fails
+        } finally {
+            setIsVlmIntervalSaving(false);
+        }
+    };
 
     // Initialize Devices
     useEffect(() => {
@@ -96,7 +134,14 @@ const LiveFeed = ({ isExpanded }) => {
             const ws = new WebSocket(url);
             wsRef.current = ws;
 
-            ws.onopen = () => setIsConnected(true);
+            ws.onopen = () => {
+                setIsConnected(true);
+                if (vlmMode) {
+                    try {
+                        ws.send(JSON.stringify({ type: 'set_vlm_interval', seconds: vlmIntervalSeconds }));
+                    } catch (e) { }
+                }
+            };
             ws.onclose = () => {
                 setIsConnected(false);
                 setTimeout(connect, 3000);
@@ -123,7 +168,14 @@ const LiveFeed = ({ isExpanded }) => {
                 } else {
                     try {
                         const data = JSON.parse(event.data);
+                        if (data?.type === 'config_ack' && typeof data.vlm_interval_seconds === 'number') {
+                            setVlmIntervalSeconds(data.vlm_interval_seconds);
+                            return;
+                        }
                         setMetadata(data);
+                        if (typeof data?.vlm_interval_seconds === 'number') {
+                            setVlmIntervalSeconds(data.vlm_interval_seconds);
+                        }
                         
                         // Fire event so separate components (like HotThreatsCard) can listen without triggering a global re-render loop
                         if (data?.detections?.active_threats) {
@@ -260,6 +312,34 @@ const LiveFeed = ({ isExpanded }) => {
                     sx={{ mr: 0, ml: 1 }}
                 />
             </Box>
+            {vlmMode && (
+                <Box sx={{
+                    px: 2,
+                    py: 0.75,
+                    bgcolor: alpha(theme.palette.warning.main, 0.08),
+                    borderBottom: `1px solid ${alpha(theme.palette.warning.main, 0.2)}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2
+                }}>
+                    <Typography variant="caption" sx={{ minWidth: 94, fontWeight: 800, color: theme.palette.warning.dark }}>
+                        VLM INTERVAL
+                    </Typography>
+                    <Slider
+                        value={vlmIntervalSeconds}
+                        min={2}
+                        max={30}
+                        step={1}
+                        size="small"
+                        onChange={(_, value) => setVlmIntervalSeconds(Number(value))}
+                        onChangeCommitted={(_, value) => persistVlmInterval(Number(value))}
+                        sx={{ flex: 1, maxWidth: 200 }}
+                    />
+                    <Typography variant="caption" sx={{ minWidth: 44, textAlign: 'right', fontWeight: 800, color: theme.palette.warning.dark }}>
+                        {isVlmIntervalSaving ? '...' : `${vlmIntervalSeconds}s`}
+                    </Typography>
+                </Box>
+            )}
 
             <Box sx={{ 
                 flexGrow: 1, 

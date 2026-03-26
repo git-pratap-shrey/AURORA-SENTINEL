@@ -17,7 +17,7 @@ class Alert(Base):
     # ENHANCED FIGHT DETECTION: Two-Tier Scoring Fields
     ml_score = Column(Float, nullable=True)  # ML risk score (0-100)
     ai_score = Column(Float, nullable=True)  # AI risk score (0-100)
-    final_score = Column(Float, nullable=True)  # MAX(ml_score, ai_score)
+    final_score = Column(Float, nullable=True)  # Weighted/aggregated score used for alerting
     detection_source = Column(String, nullable=True)  # "ml" | "ai" | "both" | "none"
     ai_explanation = Column(String, nullable=True)  # AI reasoning
     ai_scene_type = Column(String, nullable=True)  # "real_fight" | "boxing" | "drama" | "normal"

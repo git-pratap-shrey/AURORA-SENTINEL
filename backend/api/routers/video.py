@@ -399,6 +399,12 @@ async def process_video(
                 "id": f"vid_{int(datetime.now().timestamp())}_{safe_filename[:10]}",
                 "filename": file.filename,
                 "processed_at": datetime.now().isoformat(),
+                "video_summary": {
+                    "text": results.get("description", "No detailed description available."),
+                    "provider": results.get("metrics", {}).get("ai_provider", "ensemble"),
+                    "confidence": min(1.0, max(0.0, (results.get("metrics", {}).get("fight_probability", 0) or 0) / 100.0)),
+                    "generated_at": datetime.now().isoformat()
+                },
                 "events": [
                     {
                         "timestamp": 0.0, # Brief summary at start of clip

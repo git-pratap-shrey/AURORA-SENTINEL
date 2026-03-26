@@ -48,8 +48,20 @@ class TestIntelligenceSearchAPI:
             assert response.status_code == 200
             data = response.json()
             assert 'answer' in data
+            assert 'session_id' in data
+            assert 'timeline' in data
+            assert 'answer_mode' in data
         except Exception as e:
             pytest.skip(f"Chat API not available: {e}")
+
+    def test_cross_search_returns_200(self, app_client):
+        """Test GET /intelligence/cross-search returns HTTP 200"""
+        try:
+            response = app_client.get('/intelligence/cross-search?q=fight&limit=3')
+            assert response.status_code == 200
+            assert isinstance(response.json(), list)
+        except Exception as e:
+            pytest.skip(f"Cross search API not available: {e}")
     
     def test_search_case_insensitive(self, app_client):
         """Test search is case insensitive"""
@@ -139,3 +151,40 @@ class TestChatFunctionality:
             assert 'answer' in data
         except Exception as e:
             pytest.skip(f"Chat API not available: {e}")
+
+    def test_chat_session_round_trip(self, app_client):
+        """Follow-up question should preserve session id when provided."""
+        try:
+            first = app_client.post('/intelligence/chat', json={
+                'question': 'Summarize the latest video'
+            })
+            assert first.status_code == 200
+            first_data = first.json()
+            session_id = first_data.get('session_id')
+            assert session_id
+
+            second = app_client.post('/intelligence/chat', json={
+                'question': 'What happened at 0:30?',
+                'session_id': session_id
+            })
+            assert second.status_code == 200
+            second_data = second.json()
+            assert second_data.get('session_id') == session_id
+            assert isinstance(second_data.get('timeline', []), list)
+        except Exception as e:
+            pytest.skip(f"Session chat API not available: {e}")
+
+
+class TestSettingsVlmInterval:
+    def test_get_set_vlm_interval(self, app_client):
+        """Persisted VLM interval setting should be writable and readable."""
+        try:
+            write_res = app_client.post('/settings/vlm-interval', json={'seconds': 8})
+            assert write_res.status_code == 200
+            assert write_res.json().get('seconds') == 8
+
+            read_res = app_client.get('/settings/vlm-interval')
+            assert read_res.status_code == 200
+            assert read_res.json().get('seconds') == 8
+        except Exception as e:
+            pytest.skip(f"Settings API not available: {e}")

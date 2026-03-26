@@ -202,6 +202,72 @@ class TwoTierScoringService:
             result['nemotron_verification'] = nemotron_verification
         
         return result
+
+    def aggregate_existing_scores(
+        self,
+        ml_score: Optional[float],
+        ml_factors: Optional[Dict[str, Any]],
+        ai_score: Optional[float],
+        ai_explanation: str,
+        ai_scene_type: str,
+        ai_confidence: float,
+        ai_provider: str,
+        nemotron_verification: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Aggregate already-computed ML/AI scores using canonical fallback and weighting logic.
+        This avoids re-running AI inference in loops where AI has already completed.
+        """
+        ml_score = ml_score if ml_score is not None else 0.0
+        ai_score = ai_score if ai_score is not None else None
+        ml_factors = ml_factors or {}
+
+        scoring_method = ""
+        overall_confidence = 0.0
+
+        if ai_score is not None:
+            ml_w = getattr(config, 'ML_SCORE_WEIGHT', 0.3) if config else 0.3
+            ai_w = getattr(config, 'AI_SCORE_WEIGHT', 0.7) if config else 0.7
+            final_score = (ml_w * ml_score) + (ai_w * ai_score)
+            scoring_method = "weighted"
+            overall_confidence = getattr(config, 'CONFIDENCE_BOTH_AVAILABLE', 0.8) if config else 0.8
+        elif ml_score is not None:
+            final_score = ml_score
+            scoring_method = "ml_only"
+            overall_confidence = getattr(config, 'CONFIDENCE_ML_ONLY', 0.3) if config else 0.3
+        else:
+            final_score = 0.0
+            scoring_method = "none"
+            overall_confidence = getattr(config, 'CONFIDENCE_NONE', 0.0) if config else 0.0
+
+        final_score = max(0.0, min(100.0, float(final_score)))
+
+        if ml_score > self.alert_threshold and ai_score is not None and ai_score > self.alert_threshold:
+            source = "both"
+        elif ml_score > self.alert_threshold:
+            source = "ml"
+        elif ai_score is not None and ai_score > self.alert_threshold:
+            source = "ai"
+        else:
+            source = "none"
+
+        result = {
+            'ml_score': float(ml_score),
+            'ai_score': float(ai_score) if ai_score is not None else 0.0,
+            'final_score': final_score,
+            'ml_factors': ml_factors,
+            'ai_explanation': ai_explanation or "",
+            'ai_scene_type': ai_scene_type or "normal",
+            'ai_confidence': float(ai_confidence or 0.0),
+            'ai_provider': ai_provider or "unknown",
+            'scoring_method': scoring_method,
+            'confidence': overall_confidence,
+            'detection_source': source,
+            'should_alert': final_score > self.alert_threshold,
+        }
+        if nemotron_verification:
+            result['nemotron_verification'] = nemotron_verification
+        return result
     
     async def _call_ai_verification(self, frame, ml_score, ml_factors, camera_id, timestamp):
         """

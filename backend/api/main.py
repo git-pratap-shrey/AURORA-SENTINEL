@@ -3,7 +3,7 @@ load_dotenv() # MUST BE FIRST
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.db.database import engine, Base
+from backend.db.database import engine, Base, ensure_alert_columns
 from backend.api.routers import alerts, analytics, video, stream, archive, stream_vlm, intelligence, settings
 from backend.services.ml_service import ml_service
 import os
@@ -11,6 +11,7 @@ import shutil
 
 # Create tables
 Base.metadata.create_all(bind=engine)
+ensure_alert_columns()
 
 # Initialize FastAPI
 app = FastAPI(title="AURORA-SENTINEL API", version="2.0.0")

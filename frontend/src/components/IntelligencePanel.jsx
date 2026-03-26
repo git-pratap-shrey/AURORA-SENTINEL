@@ -28,6 +28,7 @@ const IntelligencePanel = ({ currentFile }) => {
     const [isChatting, setIsChatting] = useState(false);
     const [chatQuery, setChatQuery] = useState('');
     const [chatHistory, setChatHistory] = useState([]);
+    const [chatSessionId, setChatSessionId] = useState(null);
 
     const theme = useTheme();
 
@@ -90,7 +91,8 @@ const IntelligencePanel = ({ currentFile }) => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     question: questionToAsk || "What is happening in this video?",
-                    filename: currentFile || undefined
+                    filename: currentFile || undefined,
+                    session_id: chatSessionId || undefined
                 })
             });
             
@@ -100,13 +102,18 @@ const IntelligencePanel = ({ currentFile }) => {
             
             const data = await res.json();
             const answer = data.answer || "No answer received from AI";
+            if (data.session_id) {
+                setChatSessionId(data.session_id);
+            }
             
             // Add AI response to history
             setChatHistory(prev => [...prev, {
                 type: 'ai',
                 message: answer,
                 filename: data.filename,
-                confidence: data.confidence
+                confidence: data.confidence,
+                answerMode: data.answer_mode,
+                timeline: Array.isArray(data.timeline) ? data.timeline : []
             }]);
             
         } catch (err) {
@@ -465,6 +472,50 @@ const IntelligencePanel = ({ currentFile }) => {
                                                         Confidence: {(msg.confidence * 100).toFixed(0)}%
                                                     </Typography>
                                                 )}
+                                                {msg.type === 'ai' && msg.answerMode && (
+                                                    <Typography variant="caption" sx={{ 
+                                                        color: 'rgba(255,255,255,0.35)', 
+                                                        fontWeight: 700,
+                                                        display: 'block',
+                                                        mt: 0.5
+                                                    }}>
+                                                        Mode: {msg.answerMode}
+                                                    </Typography>
+                                                )}
+                                                {msg.type === 'ai' && Array.isArray(msg.timeline) && msg.timeline.length > 0 && (
+                                                    <Box sx={{ mt: 1.25, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                                                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.45)', fontWeight: 800 }}>
+                                                            TIMELINE CONTEXT USED
+                                                        </Typography>
+                                                        {msg.timeline.slice(0, 5).map((evt, tIdx) => (
+                                                            <Button
+                                                                key={tIdx}
+                                                                size="small"
+                                                                onClick={() => {
+                                                                    const ts = Number(evt.timestamp) || 0;
+                                                                    setDrawerOpen(true);
+                                                                    setSeekSeconds(ts);
+                                                                }}
+                                                                sx={{
+                                                                    justifyContent: 'flex-start',
+                                                                    textAlign: 'left',
+                                                                    borderRadius: 1.5,
+                                                                    px: 1,
+                                                                    py: 0.5,
+                                                                    fontSize: '0.68rem',
+                                                                    color: 'rgba(255,255,255,0.75)',
+                                                                    border: `1px solid ${alpha(theme.palette.secondary.main, 0.22)}`,
+                                                                    bgcolor: alpha(theme.palette.secondary.main, 0.06),
+                                                                    '&:hover': {
+                                                                        bgcolor: alpha(theme.palette.secondary.main, 0.15)
+                                                                    }
+                                                                }}
+                                                            >
+                                                                [{Number(evt.timestamp || 0).toFixed(1)}s] {evt.severity || 'low'} - {String(evt.description || '').slice(0, 90)}
+                                                            </Button>
+                                                        ))}
+                                                    </Box>
+                                                )}
                                             </Paper>
                                         </Box>
                                     ))}
@@ -540,7 +591,10 @@ const IntelligencePanel = ({ currentFile }) => {
                             {chatHistory.length > 0 && (
                                 <Button
                                     size="small"
-                                    onClick={() => setChatHistory([])}
+                                    onClick={() => {
+                                        setChatHistory([]);
+                                        setChatSessionId(null);
+                                    }}
                                     sx={{ mt: 1, fontWeight: 800, fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)' }}
                                 >
                                     CLEAR CHAT

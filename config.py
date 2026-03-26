@@ -23,6 +23,9 @@ ENABLE_NEMOTRON_VERIFICATION = True
 # Set to False to save 4-6GB of system RAM when using the cloud!
 PRELOAD_LOCAL_MODELS = False
 
+# Agent-style chat rollout gate (kept off by default)
+ENABLE_AGENT_CHAT = os.getenv("ENABLE_AGENT_CHAT", "false").lower() == "true"
+
 # Embedding model used for RAG Vector Database
 EMBEDDING_MODEL_ID = os.getenv("EMBEDDING_MODEL_ID", "all-MiniLM-L6-v2")
 
@@ -64,6 +67,9 @@ VLM_ANALYSIS_INTERVAL = 10     # Seconds between periodic VLM calls (live)
 VLM_HIGH_RISK_INTERVAL = 3     # Min seconds between VLM calls for high risk
 OFFLINE_ANALYSIS_INTERVAL = 2   # Seconds between ML checks on uploaded video
 CHANGE_TRIGGER_COOLDOWN = 3.0   # Min seconds between motion-triggered VLM calls
+LIVE_VLM_CONTEXT_WINDOW = 4     # Rolling narratives included in live VLM prompt
+VLM_INTERVAL_MIN_SECONDS = 2     # Runtime control lower bound
+VLM_INTERVAL_MAX_SECONDS = 30    # Runtime control upper bound
 
 # -------------------------------------------------------------------
 # TIMEOUTS
@@ -88,3 +94,11 @@ CONFIDENCE_BOTH_AVAILABLE = 0.8  # When both ML and AI scores exist
 CONFIDENCE_ML_ONLY = 0.3         # When only ML score available
 CONFIDENCE_AI_ONLY = 0.6         # When only AI score available
 CONFIDENCE_NONE = 0.0            # When neither available
+
+# -------------------------------------------------------------------
+# CHAT SETTINGS
+# -------------------------------------------------------------------
+
+CHAT_SESSION_TTL_SECONDS = int(os.getenv("CHAT_SESSION_TTL_SECONDS", "1800"))
+CHAT_MAX_TURNS = int(os.getenv("CHAT_MAX_TURNS", "12"))
+CHAT_TIMELINE_LIMIT = int(os.getenv("CHAT_TIMELINE_LIMIT", "5"))
