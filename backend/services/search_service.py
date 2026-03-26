@@ -47,8 +47,10 @@ class SearchService:
             except ImportError:
                 embed_model = "all-MiniLM-L6-v2"
                 
-            print(f"Loading SentenceTransformer model ({embed_model}) on CPU...")
-            self._model = SentenceTransformer(embed_model, device='cpu')
+            import torch
+            device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            print(f"Loading SentenceTransformer model ({embed_model}) on {device.upper()}...")
+            self._model = SentenceTransformer(embed_model, device=device)
             print("Model loaded successfully.")
         return self._model
 

@@ -4,7 +4,7 @@ load_dotenv() # MUST BE FIRST
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.db.database import engine, Base
-from backend.api.routers import alerts, analytics, video, stream, archive, stream_vlm, intelligence
+from backend.api.routers import alerts, analytics, video, stream, archive, stream_vlm, intelligence, settings
 from backend.services.ml_service import ml_service
 import os
 import shutil
@@ -27,6 +27,7 @@ app.add_middleware(
 )
 
 # Serve recorded videos
+os.makedirs("storage/recordings", exist_ok=True)
 app.mount("/recordings", StaticFiles(directory="storage/recordings"), name="recordings")
 
 from fastapi.responses import JSONResponse
@@ -75,6 +76,8 @@ print("Including archive router...")
 app.include_router(archive.router, prefix="/archive", tags=["Archive"])
 print("Including intelligence router...")
 app.include_router(intelligence.router, prefix="/intelligence", tags=["Intelligence"]) 
+print("Including settings router...")
+app.include_router(settings.router, prefix="/settings", tags=["Settings"])
 print("All routers included.")
 
 # Serve Static Files (Frontend)
@@ -88,7 +91,7 @@ if os.path.exists("frontend/build"):
     @app.get("/{full_path:path}")
     async def serve_frontend(full_path: str):
         # Prevent intercepting API routes
-        if full_path.startswith(("alerts", "analytics", "ws", "vlm", "process", "archive", "intelligence", "health")):
+        if full_path.split('/')[0] in ["alerts", "analytics", "ws", "vlm", "process", "archive", "intelligence", "health", "docs", "openapi.json"]:
             return JSONResponse(status_code=404, content={"detail": "Not Found"})
         return FileResponse("frontend/build/index.html")
 else:

@@ -21,9 +21,12 @@ class OfflineProcessor:
         self.storage_dir = storage_dir
         self.metadata_file = metadata_file
         self.lock = threading.Lock() # NEW: Thread safety lock
+        os.makedirs(self.storage_dir, exist_ok=True)
+        os.makedirs(os.path.dirname(self.metadata_file), exist_ok=True)
         self.ensure_metadata_file()
 
     def ensure_metadata_file(self):
+        os.makedirs(os.path.dirname(self.metadata_file), exist_ok=True)
         if not os.path.exists(self.metadata_file):
             with open(self.metadata_file, 'w') as f:
                 json.dump([], f)

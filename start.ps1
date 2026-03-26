@@ -11,7 +11,7 @@ function Start-Component {
         [string]$Path
     )
     Write-Host "Starting $Title..." -ForegroundColor Green
-    Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$Path'; $Command"
+    Start-Process powershell -ArgumentList "-NoExit", "-ExecutionPolicy", "Bypass", "-Command", "cd '$Path'; $Command"
 }
 
 # 1. Start AI Intelligence Layer (Python-based with local models)
@@ -19,8 +19,11 @@ Write-Host "Starting AI Intelligence Layer (Local Models)..." -ForegroundColor Y
 
 if (Test-Path ".\ai-intelligence-layer\venv_ai") {
     # Use Python-based AI layer with local models
-    Start-Component -Title "AI Intelligence Layer (Local)" -Command ".\venv_ai\Scripts\Activate.ps1; python server_local.py" -Path ".\ai-intelligence-layer"
-} elseif (Test-Path ".\ai-intelligence-layer\node_modules") {
+    Start-Component -Title "AI Intelligence Layer (Local)" -Command ".\venv_ai\Scripts\Activate.ps1; python server_local.py" -Path "$PSScriptRoot\ai-intelligence-layer"
+} elseif (Test-Path "$PSScriptRoot\venv") {
+    # Use root venv which has AI layer dependencies installed
+    Start-Component -Title "AI Intelligence Layer (Local)" -Command "..\venv\Scripts\Activate.ps1; python server_local.py" -Path "$PSScriptRoot\ai-intelligence-layer"
+} elseif (Test-Path "$PSScriptRoot\ai-intelligence-layer\node_modules") {
     # Fallback to Node.js version if available
     Start-Component -Title "AI Intelligence Layer (Node)" -Command "npm start" -Path ".\ai-intelligence-layer"
 } else {
@@ -35,10 +38,27 @@ Start-Sleep -Seconds 5
 # 2. Start Backend
 Start-Component -Title "Backend API" -Command "`$env:PYTHONPATH='.'; .\venv\Scripts\python -m uvicorn backend.api.main:app --host 0.0.0.0 --port 8000 --reload" -Path "."
 
-# Wait for backend to start
-Write-Host "Waiting for Backend to initialize..." -ForegroundColor Yellow
-Start-Sleep -Seconds 5
-
+# Wait for backend to start and load AI models
+Write-Host "Waiting for Backend to initialize and load AI models into GPU (this may take 15-30 seconds)..." -ForegroundColor Yellow
+$apiReady = $false
+$retryCount = 0
+while (-not $apiReady -and $retryCount -lt 30) {
+    try {
+        $response = Invoke-WebRequest -Uri "http://localhost:8000/health" -Method Get -ErrorAction Stop
+        if ($response.StatusCode -eq 200) {
+            $apiReady = $true
+            Write-Host "Backend API is ready!" -ForegroundColor Green
+        }
+    } catch {
+        Write-Host -NoNewline "."
+        Start-Sleep -Seconds 2
+        $retryCount++
+    }
+}
+Write-Host ""
+if (-not $apiReady) {
+    Write-Host "Warning: Backend initialization took longer than expected. Proceeding anyway..." -ForegroundColor Red
+}
 # 3. Start Frontend
 # Check if node_modules exists, if not install
 if (-not (Test-Path ".\frontend\node_modules")) {
