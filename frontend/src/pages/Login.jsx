@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Box, Paper, Typography, TextField, Button, IconButton, InputAdornment, Container, Tab, Tabs, alpha, useTheme, CircularProgress } from '@mui/material';
-import { Shield, Eye, EyeOff, Lock, User, ArrowRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { Box, Paper, Typography, TextField, Button, IconButton, InputAdornment, Tab, Tabs, useTheme, CircularProgress } from '@mui/material';
+import { Eye, EyeOff, Lock, User } from 'lucide-react';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';

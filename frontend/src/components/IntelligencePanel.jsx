@@ -1,14 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Box, Typography, Paper, TextField, IconButton, Chip,
-    List, ListItem, ListItemText, ListItemIcon,
-    Divider, alpha, useTheme, CircularProgress,
-    Button, Badge, Avatar, Fade, Tooltip,
+    List, alpha, useTheme, CircularProgress,
+    Button, Avatar, Fade, Tooltip,
     Modal, Backdrop
 } from '@mui/material';
 import {
-    Search, Brain, Play, Clock, AlertTriangle,
-    Activity, Filter, History, Target, ShieldAlert,
+    Search, Brain, Play, Clock, History, Target, ShieldAlert,
     Zap, Mic, Video, X
 } from 'lucide-react';
 import { API_BASE_URL } from '../config';
@@ -16,7 +14,7 @@ import { useIntelligence } from '../context/IntelligenceContext';
 
 const IntelligencePanel = ({ currentFile }) => {
     const { setDrawerOpen, setSeekSeconds } = useIntelligence();
-    const [selectedSeverity, setSelectedSeverity] = useState('ALL');
+    const [selectedSeverity] = useState('ALL');
     const [selectedThreat, setSelectedThreat] = useState(null);
     const [activeTab, setActiveTab] = useState('latest');
     const [query, setQuery] = useState('');
@@ -24,12 +22,35 @@ const IntelligencePanel = ({ currentFile }) => {
     const [latestEvents, setLatestEvents] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
     const [selectedVideo, setSelectedVideo] = useState(null);
-    const [chatAnswer, setChatAnswer] = useState(null);
     const [isChatting, setIsChatting] = useState(false);
     const [chatQuery, setChatQuery] = useState('');
     const [chatHistory, setChatHistory] = useState([]);
+    const [chatSessionId, setChatSessionId] = useState(null);
 
     const theme = useTheme();
+
+    const runSearch = useCallback(async (searchQuery) => {
+        setIsSearching(true);
+        setActiveTab('search');
+        try {
+            const baseUrl = `${API_BASE_URL}/intelligence/search`;
+            const params = new URLSearchParams({ q: searchQuery || "general description" });
+            if (currentFile) params.append('filename', currentFile);
+
+            const res = await fetch(`${baseUrl}?${params.toString()}`);
+            const data = await res.json();
+            setResults(data);
+        } catch (e) {
+            console.error("Search failed:", e);
+        } finally {
+            setIsSearching(false);
+        }
+    }, [currentFile]);
+
+    const handleSearch = useCallback(async (e) => {
+        if (e) e.preventDefault();
+        await runSearch(query);
+    }, [query, runSearch]);
 
     // NEW: Auto-filter/reset when current file changes
     useEffect(() => {
@@ -39,13 +60,13 @@ const IntelligencePanel = ({ currentFile }) => {
             // Don't auto-switch tabs - let user choose
             // Auto-trigger search only if already on search tab
             if (activeTab === 'search') {
-                handleSearch();
+                runSearch("general description");
             }
         } else {
             setResults([]);
             setLatestEvents([]);
         }
-    }, [currentFile]);
+    }, [currentFile, activeTab, runSearch]);
 
     useEffect(() => {
         fetchLatest();
@@ -90,7 +111,8 @@ const IntelligencePanel = ({ currentFile }) => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     question: questionToAsk || "What is happening in this video?",
-                    filename: currentFile || undefined
+                    filename: currentFile || undefined,
+                    session_id: chatSessionId || undefined
                 })
             });
             
@@ -100,13 +122,18 @@ const IntelligencePanel = ({ currentFile }) => {
             
             const data = await res.json();
             const answer = data.answer || "No answer received from AI";
+            if (data.session_id) {
+                setChatSessionId(data.session_id);
+            }
             
             // Add AI response to history
             setChatHistory(prev => [...prev, {
                 type: 'ai',
                 message: answer,
                 filename: data.filename,
-                confidence: data.confidence
+                confidence: data.confidence,
+                answerMode: data.answer_mode,
+                timeline: Array.isArray(data.timeline) ? data.timeline : []
             }]);
             
         } catch (err) {
@@ -117,26 +144,6 @@ const IntelligencePanel = ({ currentFile }) => {
             }]);
         } finally {
             setIsChatting(false);
-        }
-    };
-
-    const handleSearch = async (e) => {
-        if (e) e.preventDefault();
-
-        setIsSearching(true);
-        setActiveTab('search');
-        try {
-            const baseUrl = `${API_BASE_URL}/intelligence/search`;
-            const params = new URLSearchParams({ q: query || "general description" });
-            if (currentFile) params.append('filename', currentFile);
-
-            const res = await fetch(`${baseUrl}?${params.toString()}`);
-            const data = await res.json();
-            setResults(data);
-        } catch (e) {
-            console.error("Search failed:", e);
-        } finally {
-            setIsSearching(false);
         }
     };
 
@@ -465,6 +472,50 @@ const IntelligencePanel = ({ currentFile }) => {
                                                         Confidence: {(msg.confidence * 100).toFixed(0)}%
                                                     </Typography>
                                                 )}
+                                                {msg.type === 'ai' && msg.answerMode && (
+                                                    <Typography variant="caption" sx={{ 
+                                                        color: 'rgba(255,255,255,0.35)', 
+                                                        fontWeight: 700,
+                                                        display: 'block',
+                                                        mt: 0.5
+                                                    }}>
+                                                        Mode: {msg.answerMode}
+                                                    </Typography>
+                                                )}
+                                                {msg.type === 'ai' && Array.isArray(msg.timeline) && msg.timeline.length > 0 && (
+                                                    <Box sx={{ mt: 1.25, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                                                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.45)', fontWeight: 800 }}>
+                                                            TIMELINE CONTEXT USED
+                                                        </Typography>
+                                                        {msg.timeline.slice(0, 5).map((evt, tIdx) => (
+                                                            <Button
+                                                                key={tIdx}
+                                                                size="small"
+                                                                onClick={() => {
+                                                                    const ts = Number(evt.timestamp) || 0;
+                                                                    setDrawerOpen(true);
+                                                                    setSeekSeconds(ts);
+                                                                }}
+                                                                sx={{
+                                                                    justifyContent: 'flex-start',
+                                                                    textAlign: 'left',
+                                                                    borderRadius: 1.5,
+                                                                    px: 1,
+                                                                    py: 0.5,
+                                                                    fontSize: '0.68rem',
+                                                                    color: 'rgba(255,255,255,0.75)',
+                                                                    border: `1px solid ${alpha(theme.palette.secondary.main, 0.22)}`,
+                                                                    bgcolor: alpha(theme.palette.secondary.main, 0.06),
+                                                                    '&:hover': {
+                                                                        bgcolor: alpha(theme.palette.secondary.main, 0.15)
+                                                                    }
+                                                                }}
+                                                            >
+                                                                [{Number(evt.timestamp || 0).toFixed(1)}s] {evt.severity || 'low'} - {String(evt.description || '').slice(0, 90)}
+                                                            </Button>
+                                                        ))}
+                                                    </Box>
+                                                )}
                                             </Paper>
                                         </Box>
                                     ))}
@@ -540,7 +591,10 @@ const IntelligencePanel = ({ currentFile }) => {
                             {chatHistory.length > 0 && (
                                 <Button
                                     size="small"
-                                    onClick={() => setChatHistory([])}
+                                    onClick={() => {
+                                        setChatHistory([]);
+                                        setChatSessionId(null);
+                                    }}
                                     sx={{ mt: 1, fontWeight: 800, fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)' }}
                                 >
                                     CLEAR CHAT

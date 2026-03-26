@@ -80,6 +80,8 @@ data/sample_videos/fightvideos/fight_0131.mpeg
 # ========================
 # Test / Temp Video Files
 # ========================
+*.mpeg
+*.mp4
 test_H264.mp4
 test_MJPG.mp4
 test_XVID.mp4
@@ -109,7 +111,17 @@ Thumbs.db
 .idea/
 
 # ========================
-# Hypothesis / Test Cache
+# Path / Environmental Cache
 # ========================
 .hypothesis/
 .pytest_cache/
+
+# ========================
+# Large AI Models
+# ========================
+fir.pt
+vehicle.pt
+wepon.pt
+yolov8s.pt
+yolov8n.pt
+yolov8n-pose.pt

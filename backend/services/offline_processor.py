@@ -13,6 +13,12 @@ import threading
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 load_dotenv()
 
+# Load config safely
+try:
+    import config
+except Exception:
+    config = None
+
 from backend.services.vlm_service import vlm_service
 from backend.services.ml_service import ml_service
 
@@ -49,6 +55,49 @@ class OfflineProcessor:
             else:
                 print(f"  [METADATA] {record['filename']} already in registry, skipping save.")
 
+    def _fallback_video_summary(self, all_events):
+        if not all_events:
+            return "No events detected in this video."
+        top_events = sorted(
+            all_events,
+            key=lambda e: (
+                2 if str(e.get("severity", "")).lower() == "high" else
+                1 if str(e.get("severity", "")).lower() == "medium" else 0,
+                float(e.get("confidence", 0) or 0),
+            ),
+            reverse=True,
+        )[:3]
+        snippets = []
+        for evt in top_events:
+            ts = round(float(evt.get("timestamp", 0) or 0), 1)
+            desc = (evt.get("description", "") or "").strip()
+            if desc:
+                snippets.append(f"At {ts}s: {desc}")
+        if snippets:
+            return " ".join(snippets)
+        return "Video processed successfully, but no descriptive events were generated."
+
+    def _build_video_summary(self, filename, all_events):
+        summary = self._fallback_video_summary(all_events)
+        provider = "fallback"
+        confidence = 0.6 if all_events else 0.2
+
+        try:
+            llm_summary = vlm_service.summarize_events(filename, all_events)
+            if llm_summary and llm_summary.get("summary"):
+                summary = llm_summary["summary"]
+                provider = llm_summary.get("provider", "summary")
+                confidence = float(llm_summary.get("confidence", confidence))
+        except Exception as e:
+            print(f"  [SUMMARY] Fallback summary used due to error: {e}")
+
+        return {
+            "text": summary,
+            "provider": provider,
+            "confidence": round(confidence, 2),
+            "generated_at": datetime.now().isoformat(),
+        }
+
     def process_video(self, video_filename):
         video_path = os.path.join(self.storage_dir, video_filename)
         if not os.path.exists(video_path):
@@ -73,7 +122,7 @@ class OfflineProcessor:
         # ml_service.load_models() # MOVED to scan_and_process
         
         # Configuration
-        ANALYSIS_INTERVAL = 2 # Check ML every 2 seconds
+        ANALYSIS_INTERVAL = getattr(config, 'OFFLINE_ANALYSIS_INTERVAL', 2) if config else 2
         frame_step = int(fps * ANALYSIS_INTERVAL)
         
         events = []
@@ -132,11 +181,15 @@ class OfflineProcessor:
                         if re.search(r'\b' + re.escape(k) + r'\b', lower_desc):
                             detected_threats.append(v)
 
+                    _sport_cap = getattr(config, 'SPORT_RISK_CAP', 15) if config else 15
+                    _high_th = getattr(config, 'SEVERITY_HIGH_THRESHOLD', 65) if config else 65
+                    _med_th = getattr(config, 'SEVERITY_MEDIUM_THRESHOLD', 35) if config else 35
+
                     if any(x in ["sport_boxing"] for x in detected_threats):
                         severity = "low"
-                        suggested_risk = min(suggested_risk, 15)
-                    elif suggested_risk >= 65: severity = "high"
-                    elif suggested_risk >= 35: severity = "medium"
+                        suggested_risk = min(suggested_risk, _sport_cap)
+                    elif suggested_risk >= _high_th: severity = "high"
+                    elif suggested_risk >= _med_th: severity = "medium"
 
                     # Enrich description with ML findings if VLM is too generic
                     if len(description) < 40:
@@ -165,12 +218,14 @@ class OfflineProcessor:
         
         all_events = events + audio_events
         all_events.sort(key=lambda x: x['timestamp'])
+        video_summary = self._build_video_summary(video_filename, all_events)
 
         # Save results atomically
         record = {
             "id": f"vid_{int(time.time())}_{video_filename[:8]}",
             "filename": video_filename,
             "processed_at": datetime.now().isoformat(),
+            "video_summary": video_summary,
             "events": all_events
         }
         

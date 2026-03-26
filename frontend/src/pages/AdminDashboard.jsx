@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Grid, Paper, Tabs, Tab, Button, List, ListItem, Chip, IconButton, useTheme, alpha, Switch, FormControlLabel, TextField, Avatar, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Alert, CircularProgress, MenuItem, Slide } from '@mui/material';
-import { FileText, Users, Clock, Zap, Settings, Shield, AlertTriangle, Search, Filter, Lock, Plus, MapPin, Eye, Trash2, Check, X, ShieldAlert, UserPlus, Camera, Activity, HardDrive, Cpu, Save, Bell, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { Box, Typography, Grid, Paper, Tabs, Tab, Button, List, Chip, IconButton, useTheme, alpha, Switch, FormControlLabel, TextField, Avatar, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress, MenuItem, Slide } from '@mui/material';
+import { FileText, Users, Zap, Settings, Shield, AlertTriangle, Lock, Trash2, Check, X, UserPlus, Activity, HardDrive, Cpu, Save } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import logoImage from '../assets/logo.png';

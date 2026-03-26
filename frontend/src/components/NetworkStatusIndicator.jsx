@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, alpha, useTheme, Slide } from '@mui/material';
-import { Wifi, WifiOff, Globe, Zap } from 'lucide-react';
+import { Wifi, WifiOff } from 'lucide-react';
 
 const NetworkStatusIndicator = () => {
     const [isOnline, setIsOnline] = useState(navigator.onLine);

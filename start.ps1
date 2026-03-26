@@ -1,4 +1,5 @@
 # Aurora Sentinel Startup Script
+Set-Location "$PSScriptRoot"
 
 Write-Host "Starting Aurora Sentinel..." -ForegroundColor Cyan
 
@@ -16,7 +17,7 @@ function Start-Component {
 # 1. Start AI Intelligence Layer (Python-based with local models)
 Write-Host "Starting AI Intelligence Layer (Local Models)..." -ForegroundColor Yellow
 
-if (Test-Path "$PSScriptRoot\ai-intelligence-layer\venv_ai") {
+if (Test-Path ".\ai-intelligence-layer\venv_ai") {
     # Use Python-based AI layer with local models
     Start-Component -Title "AI Intelligence Layer (Local)" -Command ".\venv_ai\Scripts\Activate.ps1; python server_local.py" -Path "$PSScriptRoot\ai-intelligence-layer"
 } elseif (Test-Path "$PSScriptRoot\venv") {
@@ -24,7 +25,7 @@ if (Test-Path "$PSScriptRoot\ai-intelligence-layer\venv_ai") {
     Start-Component -Title "AI Intelligence Layer (Local)" -Command "..\venv\Scripts\Activate.ps1; python server_local.py" -Path "$PSScriptRoot\ai-intelligence-layer"
 } elseif (Test-Path "$PSScriptRoot\ai-intelligence-layer\node_modules") {
     # Fallback to Node.js version if available
-    Start-Component -Title "AI Intelligence Layer (Node)" -Command "npm start" -Path "$PSScriptRoot\ai-intelligence-layer"
+    Start-Component -Title "AI Intelligence Layer (Node)" -Command "npm start" -Path ".\ai-intelligence-layer"
 } else {
     Write-Host "AI Intelligence Layer not set up. Run setup_ai_local.ps1 first" -ForegroundColor Yellow
     Write-Host "Or install Node.js dependencies: cd ai-intelligence-layer; npm install" -ForegroundColor Yellow
@@ -35,7 +36,7 @@ Write-Host "Waiting for AI Intelligence Layer to initialize..." -ForegroundColor
 Start-Sleep -Seconds 5
 
 # 2. Start Backend
-Start-Component -Title "Backend API" -Command "`$env:PYTHONPATH='.'; .\venv\Scripts\python -m uvicorn backend.api.main:app --host 0.0.0.0 --port 8000 --reload" -Path "$PSScriptRoot"
+Start-Component -Title "Backend API" -Command "`$env:PYTHONPATH='.'; .\venv\Scripts\python -m uvicorn backend.api.main:app --host 0.0.0.0 --port 8000 --reload" -Path "."
 
 # Wait for backend to start and load AI models
 Write-Host "Waiting for Backend to initialize and load AI models into GPU (this may take 15-30 seconds)..." -ForegroundColor Yellow
@@ -60,14 +61,14 @@ if (-not $apiReady) {
 }
 # 3. Start Frontend
 # Check if node_modules exists, if not install
-if (-not (Test-Path "$PSScriptRoot\frontend\node_modules")) {
+if (-not (Test-Path ".\frontend\node_modules")) {
     Write-Host "Installing Frontend Dependencies..." -ForegroundColor Yellow
-    cd "$PSScriptRoot\frontend"
+    cd ".\frontend"
     npm install
     cd ..
 }
 
-Start-Component -Title "Frontend Dashboard" -Command "npm start" -Path "$PSScriptRoot\frontend"
+Start-Component -Title "Frontend Dashboard" -Command "npm start" -Path ".\frontend"
 
 Write-Host "System Starting!" -ForegroundColor Cyan
 Write-Host "AI Intelligence Layer: http://localhost:3001 (Local Models)" -ForegroundColor White

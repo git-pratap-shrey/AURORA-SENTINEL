@@ -1,7 +1,7 @@
 import React, { useCallback, useRef, useEffect } from 'react';
 import { API_BASE_URL } from '../config';
-import { Box, Typography, Paper, Grid, Button, IconButton, LinearProgress, Drawer, List, ListItem, alpha, useTheme, Chip, Divider, CircularProgress, Snackbar, Alert, Slider } from '@mui/material';
-import { Upload, FileVideo, X, Play, Shield, Search, ChevronRight, AlertTriangle, CheckCircle2, Clock, Activity, Users, Target, Rewind, Maximize2, FileText, Brain } from 'lucide-react';
+import { Box, Typography, Paper, Grid, Button, IconButton, LinearProgress, Drawer, List, ListItem, alpha, useTheme, Chip, Divider, CircularProgress } from '@mui/material';
+import { Upload, X, Shield, Search, ChevronRight, AlertTriangle, CheckCircle2, Clock, Activity, Users, Rewind, Maximize2, FileText, Brain } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -28,7 +28,7 @@ const Intelligence = () => {
 
     const onDrop = useCallback(acceptedFiles => {
         setFile(acceptedFiles[0]);
-    }, []);
+    }, [setFile]);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
@@ -79,12 +79,12 @@ const Intelligence = () => {
         }
     };
 
-    const seekTo = (seconds) => {
+    const seekTo = useCallback((seconds) => {
         if (videoRef.current) {
             videoRef.current.currentTime = seconds;
             videoRef.current.play();
         }
-    };
+    }, []);
 
     // Allow IntelligencePanel (VLM search) to jump the forensic player.
     useEffect(() => {
@@ -96,7 +96,7 @@ const Intelligence = () => {
             setSeekSeconds(null);
         }, 150);
         return () => clearTimeout(t);
-    }, [seekSeconds]);
+    }, [seekSeconds, seekTo, setDrawerOpen, setSeekSeconds]);
 
     const generatePDFReport = () => {
         if (!analysisResult) return;
