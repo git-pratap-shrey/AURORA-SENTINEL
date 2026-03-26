@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Box, Typography, Paper, TextField, IconButton, Chip,
     List, alpha, useTheme, CircularProgress,
@@ -29,6 +29,29 @@ const IntelligencePanel = ({ currentFile }) => {
 
     const theme = useTheme();
 
+    const runSearch = useCallback(async (searchQuery) => {
+        setIsSearching(true);
+        setActiveTab('search');
+        try {
+            const baseUrl = `${API_BASE_URL}/intelligence/search`;
+            const params = new URLSearchParams({ q: searchQuery || "general description" });
+            if (currentFile) params.append('filename', currentFile);
+
+            const res = await fetch(`${baseUrl}?${params.toString()}`);
+            const data = await res.json();
+            setResults(data);
+        } catch (e) {
+            console.error("Search failed:", e);
+        } finally {
+            setIsSearching(false);
+        }
+    }, [currentFile]);
+
+    const handleSearch = useCallback(async (e) => {
+        if (e) e.preventDefault();
+        await runSearch(query);
+    }, [query, runSearch]);
+
     // NEW: Auto-filter/reset when current file changes
     useEffect(() => {
         if (currentFile) {
@@ -37,13 +60,13 @@ const IntelligencePanel = ({ currentFile }) => {
             // Don't auto-switch tabs - let user choose
             // Auto-trigger search only if already on search tab
             if (activeTab === 'search') {
-                handleSearch();
+                runSearch("general description");
             }
         } else {
             setResults([]);
             setLatestEvents([]);
         }
-    }, [currentFile]);
+    }, [currentFile, activeTab, runSearch]);
 
     useEffect(() => {
         fetchLatest();
@@ -121,26 +144,6 @@ const IntelligencePanel = ({ currentFile }) => {
             }]);
         } finally {
             setIsChatting(false);
-        }
-    };
-
-    const handleSearch = async (e) => {
-        if (e) e.preventDefault();
-
-        setIsSearching(true);
-        setActiveTab('search');
-        try {
-            const baseUrl = `${API_BASE_URL}/intelligence/search`;
-            const params = new URLSearchParams({ q: query || "general description" });
-            if (currentFile) params.append('filename', currentFile);
-
-            const res = await fetch(`${baseUrl}?${params.toString()}`);
-            const data = await res.json();
-            setResults(data);
-        } catch (e) {
-            console.error("Search failed:", e);
-        } finally {
-            setIsSearching(false);
         }
     };
 

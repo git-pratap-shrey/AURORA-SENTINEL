@@ -119,7 +119,7 @@ const AlertQueue = ({ alerts: propAlerts, onAcknowledge }) => {
         } catch (error) { console.error(error); }
     };
 
-    const getRiskColor = (level, score) => {
+    const getRiskColor = (level) => {
         if (level === 'CRITICAL') return theme.palette.error.main;
         if (level === 'HIGH') return theme.palette.warning.main;
         if (level === 'MEDIUM') return theme.palette.info.main;

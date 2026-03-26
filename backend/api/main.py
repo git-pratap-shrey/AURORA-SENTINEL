@@ -81,23 +81,6 @@ print("Including settings router...")
 app.include_router(settings.router, prefix="/settings", tags=["Settings"])
 print("All routers included.")
 
-# Serve Static Files (Frontend)
-from fastapi.responses import FileResponse
-
-# Check if build directory exists
-if os.path.exists("frontend/build"):
-    app.mount("/", StaticFiles(directory="frontend/build", html=True), name="frontend")
-    
-    @app.get("/{full_path:path}")
-    async def serve_frontend(full_path: str):
-        # Prevent intercepting API routes
-        if full_path.split('/')[0] in ["alerts", "analytics", "ws", "vlm", "process", "archive", "intelligence", "health", "docs", "openapi.json"]:
-            return JSONResponse(status_code=404, content={"detail": "Not Found"})
-        return FileResponse("frontend/build/index.html")
-else:
-    print("WARNING: frontend/build directory not found. Frontend will not be served by backend.")
-
-
 @app.get("/")
 async def root():
     return {
@@ -169,6 +152,22 @@ async def health_check():
             "ffmpeg": ffmpeg_ok
         }
     }
+
+# Serve Static Files (Frontend)
+from fastapi.responses import FileResponse
+
+# Register API routes first so they are not shadowed by static mount.
+if os.path.exists("frontend/build"):
+    app.mount("/", StaticFiles(directory="frontend/build", html=True), name="frontend")
+
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        # Prevent intercepting API routes
+        if full_path.split('/')[0] in ["alerts", "analytics", "ws", "vlm", "process", "archive", "intelligence", "health", "docs", "openapi.json"]:
+            return JSONResponse(status_code=404, content={"detail": "Not Found"})
+        return FileResponse("frontend/build/index.html")
+else:
+    print("WARNING: frontend/build directory not found. Frontend will not be served by backend.")
 
 if __name__ == "__main__":
     import uvicorn

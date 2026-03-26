@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Grid, Typography, Paper, Box, useTheme, Chip, IconButton, alpha } from '@mui/material';
+import { Grid, Typography, Paper, Box, useTheme, Chip, IconButton } from '@mui/material';
 import RiskHeatmap from '../components/RiskHeatmap';
 import AlertQueue from '../components/AlertQueue';
 import LiveFeed from '../components/LiveFeed';
 import AnalyticsDashboard from '../components/AnalyticsDashboard';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import LayoutGrid from '../components/LayoutGrid';
 import { Activity, Shield, AlertTriangle, MoreHorizontal } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { API_BASE_URL } from '../config';
-import { threatEventEmitter } from '../components/LiveFeed';
+
+const GREETINGS = ["Hello", "Namaste", "Hola", "Bonjour", "Ciao"];
 
 const Dashboard = () => {
     const { user } = useAuth();
@@ -54,11 +55,6 @@ const Dashboard = () => {
         } catch (error) { console.error('Error fetching risk data:', error); }
     };
 
-    const cardVariants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
-    };
-
     return (
         <Grid container spacing={4}>
             {/* Header Area */}
@@ -66,7 +62,7 @@ const Dashboard = () => {
                 <Box sx={{ mb: 1 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                         <TypewriterHeader name={user?.name} />
-                        <CyberID id={user?.id || 'OP-4921'} role={user?.role} />
+                        <CyberID id={user?.id || 'OP-4921'} />
                     </Box>
                     <Typography variant="body1" sx={{ color: theme.palette.text.secondary }}>
                         Live monitoring and safety analytics.
@@ -162,14 +158,13 @@ const Dashboard = () => {
 };
 
 const TypewriterHeader = ({ name }) => {
-    const greetings = ["Hello", "Namaste", "Hola", "Bonjour", "Ciao"];
     const [text, setText] = useState("");
     const [isDeleting, setIsDeleting] = useState(false);
     const [phraseIndex, setPhraseIndex] = useState(0);
     const [typingSpeed, setTypingSpeed] = useState(100);
 
     useEffect(() => {
-        const currentPhrase = `${greetings[phraseIndex]} ${name || 'Operator'}`;
+        const currentPhrase = `${GREETINGS[phraseIndex]} ${name || 'Operator'}`;
 
         const handleTyping = () => {
             if (!isDeleting && text === currentPhrase) {
@@ -178,7 +173,7 @@ const TypewriterHeader = ({ name }) => {
             }
             if (isDeleting && text === "") {
                 setIsDeleting(false);
-                setPhraseIndex((prev) => (prev + 1) % greetings.length);
+                setPhraseIndex((prev) => (prev + 1) % GREETINGS.length);
                 return;
             }
 
@@ -192,7 +187,7 @@ const TypewriterHeader = ({ name }) => {
 
         const timer = setTimeout(handleTyping, typingSpeed);
         return () => clearTimeout(timer);
-    }, [text, isDeleting, phraseIndex, typingSpeed, greetings, name]);
+    }, [text, isDeleting, phraseIndex, typingSpeed, name]);
 
     return (
         <Typography variant="h4" sx={{
@@ -219,8 +214,7 @@ const TypewriterHeader = ({ name }) => {
     );
 };
 
-const CyberID = ({ id, role }) => {
-    const theme = useTheme();
+const CyberID = ({ id }) => {
     return (
         <Box sx={{
             position: 'relative',

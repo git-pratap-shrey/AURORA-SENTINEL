@@ -92,7 +92,9 @@ const LiveFeed = ({ isExpanded }) => {
                 const devs = await navigator.mediaDevices.enumerateDevices();
                 const videoDevs = devs.filter(d => d.kind === 'videoinput');
                 setDevices(videoDevs);
-                if (videoDevs.length > 0 && !selectedDeviceId) setSelectedDeviceId(videoDevs[0].deviceId);
+                if (videoDevs.length > 0) {
+                    setSelectedDeviceId((prev) => prev || videoDevs[0].deviceId);
+                }
             } catch (err) {
                 setCameraError("Camera access denied.");
             }
@@ -193,7 +195,9 @@ const LiveFeed = ({ isExpanded }) => {
             if (wsRef.current) wsRef.current.close();
             if (requestRef.current) cancelAnimationFrame(requestRef.current);
         };
-    }, [performanceMode, vlmMode]); // Re-connect when mode changes
+    // Keep socket lifecycle tied to mode/interval changes; animation loop is intentionally persistent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [performanceMode, vlmMode, vlmIntervalSeconds]); // Re-connect when mode changes
 
     const lastAlertTimeRef = useRef(0);
 

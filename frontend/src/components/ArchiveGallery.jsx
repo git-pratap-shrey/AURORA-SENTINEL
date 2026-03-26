@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Typography, Grid, Card, CardContent, CardMedia, IconButton, Tab, Tabs, alpha, useTheme, Button, CircularProgress, Dialog } from '@mui/material';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Box, Typography, Grid, Card, CardContent, IconButton, Tab, Tabs, alpha, useTheme, Button, CircularProgress, Dialog } from '@mui/material';
 import { Play, Trash2, Download, FileVideo, Clock, RefreshCw, HardDrive, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { API_BASE_URL } from '../config';
@@ -11,11 +11,7 @@ const ArchiveGallery = () => {
     const [selectedClip, setSelectedClip] = useState(null);
     const theme = useTheme();
 
-    useEffect(() => {
-        fetchClips();
-    }, [tab]);
-
-    const fetchClips = async () => {
+    const fetchClips = useCallback(async () => {
         setLoading(true);
         try {
             const response = await fetch(`${API_BASE_URL}/archive/list?source=${tab}`);
@@ -26,7 +22,11 @@ const ArchiveGallery = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [tab]);
+
+    useEffect(() => {
+        fetchClips();
+    }, [fetchClips]);
 
     const handleDownload = (clip) => {
         const link = document.createElement('a');

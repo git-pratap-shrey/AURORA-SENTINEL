@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Paper, Grid, Switch, FormControlLabel, Divider, useTheme, Tabs, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, Button } from '@mui/material';
-import { Server, Database, Shield, Cpu, Activity, Users, FileText, HardDrive, RefreshCw, LogOut } from 'lucide-react';
+import { Box, Typography, Paper, Grid, Switch, FormControlLabel, Divider, Tabs, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, Button } from '@mui/material';
+import { Server, Database, Shield, Cpu, Activity, Users, HardDrive, RefreshCw, LogOut } from 'lucide-react';
 
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -13,7 +13,6 @@ const SystemPage = () => {
     const [isCalibrating, setIsCalibrating] = useState(false);
     const [isScanning, setIsScanning] = useState(false);
     const [scanMessage, setScanMessage] = useState('');
-    const theme = useTheme();
     const location = useLocation();
     const { performanceMode, setPerformanceMode } = useSettings();
 
