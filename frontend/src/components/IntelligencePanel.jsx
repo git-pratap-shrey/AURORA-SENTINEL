@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
     Box, Typography, Paper, TextField, IconButton, Chip,
-    List, ListItem, ListItemText, ListItemIcon,
-    Divider, alpha, useTheme, CircularProgress,
-    Button, Badge, Avatar, Fade, Tooltip,
+    List, alpha, useTheme, CircularProgress,
+    Button, Avatar, Fade, Tooltip,
     Modal, Backdrop
 } from '@mui/material';
 import {
-    Search, Brain, Play, Clock, AlertTriangle,
-    Activity, Filter, History, Target, ShieldAlert,
+    Search, Brain, Play, Clock, History, Target, ShieldAlert,
     Zap, Mic, Video, X
 } from 'lucide-react';
 import { API_BASE_URL } from '../config';
@@ -16,7 +14,7 @@ import { useIntelligence } from '../context/IntelligenceContext';
 
 const IntelligencePanel = ({ currentFile }) => {
     const { setDrawerOpen, setSeekSeconds } = useIntelligence();
-    const [selectedSeverity, setSelectedSeverity] = useState('ALL');
+    const [selectedSeverity] = useState('ALL');
     const [selectedThreat, setSelectedThreat] = useState(null);
     const [activeTab, setActiveTab] = useState('latest');
     const [query, setQuery] = useState('');
@@ -24,7 +22,6 @@ const IntelligencePanel = ({ currentFile }) => {
     const [latestEvents, setLatestEvents] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
     const [selectedVideo, setSelectedVideo] = useState(null);
-    const [chatAnswer, setChatAnswer] = useState(null);
     const [isChatting, setIsChatting] = useState(false);
     const [chatQuery, setChatQuery] = useState('');
     const [chatHistory, setChatHistory] = useState([]);
