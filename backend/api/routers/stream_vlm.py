@@ -106,6 +106,7 @@ async def websocket_vlm_feed(websocket: WebSocket):
 
     frame_count = 0
     skip_frames = 1
+    session_started_recording = False
 
     alert_cooldown = getattr(config, "ALERT_COOLDOWN_SECONDS", 10) if config else 10
     last_alert_time = 0.0
@@ -329,9 +330,12 @@ async def websocket_vlm_feed(websocket: WebSocket):
                             alert["level"] = str(alert["level"]).upper()
                             alert["ai_analysis"] = current_narrative
 
-                        recording_th = getattr(config, "RECORDING_THRESHOLD", 80) if config else 80
+                        recording_th = getattr(config, "RECORDING_THRESHOLD", 50) if config else 50
                         if risk_score > recording_th:
-                            video_storage_service.start_recording("CAM-01")
+                            if not video_storage_service.is_recording("CAM-01"):
+                                frame_h, frame_w = frame.shape[:2]
+                                video_storage_service.start_recording("CAM-01", frame_size=(frame_w, frame_h))
+                                session_started_recording = True
 
                         now_ts = datetime.utcnow().timestamp()
                         if alert and (now_ts - last_alert_time > alert_cooldown):
@@ -420,6 +424,8 @@ async def websocket_vlm_feed(websocket: WebSocket):
     except WebSocketDisconnect:
         print("VLM WebSocket disconnected")
     finally:
+        if session_started_recording:
+            video_storage_service.stop_recording("CAM-01")
         try:
             await websocket.close()
         except Exception:

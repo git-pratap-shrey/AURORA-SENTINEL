@@ -1,0 +1,17 @@
+# cloudflared_config.yml
+# This configuration assumes you have built the frontend (cd frontend && npm run build)
+# and are running the backend (python -m uvicorn backend.api.main:app --port 8000)
+
+tunnel: <tunnel-id-or-name>
+credentials-file: /home/anon/.cloudflared/<tunnel-id>.json
+
+ingress:
+  # Route everything to the FastAPI backend (which serves the frontend at /)
+  - hostname: <your-subdomain.example.com>
+    service: http://localhost:8000
+    originRequest:
+      connectTimeout: 30s
+      noTLSVerify: true
+
+  # Catch-all rule for 404s
+  - service: http_status:404

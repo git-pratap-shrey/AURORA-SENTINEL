@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Grid, Card, CardContent, IconButton, Tab, Tabs, alpha, useTheme, Button, CircularProgress, Dialog } from '@mui/material';
-import { Play, Trash2, Download, FileVideo, Clock, RefreshCw, HardDrive, X } from 'lucide-react';
+import { Play, Trash2, Download, FileVideo, Clock, RefreshCw, HardDrive, X, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { API_BASE_URL } from '../config';
 
@@ -35,6 +35,32 @@ const ArchiveGallery = () => {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    };
+
+    const handleRestore = async (clip) => {
+        if (!window.confirm(`Restore "${clip.name}" to active clips?`)) return;
+        try {
+            const response = await fetch(`${API_BASE_URL}/archive/restore/${encodeURIComponent(clip.name)}`, {
+                method: 'POST'
+            });
+            if (!response.ok) throw new Error('Restore failed');
+            fetchClips();
+        } catch (error) {
+            console.error('Error restoring clip:', error);
+        }
+    };
+
+    const handleDelete = async (clip) => {
+        if (!window.confirm(`Permanently delete "${clip.name}" from ${tab}?`)) return;
+        try {
+            const response = await fetch(`${API_BASE_URL}/archive/delete/${encodeURIComponent(clip.name)}?source=${tab}`, {
+                method: 'DELETE'
+            });
+            if (!response.ok) throw new Error('Delete failed');
+            fetchClips();
+        } catch (error) {
+            console.error('Error deleting clip:', error);
+        }
     };
 
     const getFormattedSize = (bytes) => {
@@ -85,7 +111,7 @@ const ArchiveGallery = () => {
                     <Box sx={{ textAlign: 'center', py: 8, opacity: 0.5 }}>
                         <FileVideo size={48} strokeWidth={1} style={{ marginBottom: 16 }} />
                         <Typography variant="body1" sx={{ fontWeight: 600 }}>No clips found in {tab} storage</Typography>
-                        <Typography variant="caption">Clips are automatically archived when threat levels exceed 70%</Typography>
+                        <Typography variant="caption">Clips are archived automatically based on current risk policy.</Typography>
                     </Box>
                 ) : (
                     <Grid container spacing={2}>
@@ -156,6 +182,22 @@ const ArchiveGallery = () => {
                                                 sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2 }}
                                             >
                                                 <Download size={14} />
+                                            </IconButton>
+                                            {tab === 'bin' && (
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={() => handleRestore(clip)}
+                                                    sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2 }}
+                                                >
+                                                    <RotateCcw size={14} />
+                                                </IconButton>
+                                            )}
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => handleDelete(clip)}
+                                                sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, color: theme.palette.error.main }}
+                                            >
+                                                <Trash2 size={14} />
                                             </IconButton>
                                         </Box>
                                     </CardContent>
