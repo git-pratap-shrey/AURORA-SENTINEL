@@ -64,7 +64,7 @@ const Intelligence = () => {
             setAnalysisResult(data);
             setDrawerOpen(true);
 
-            if (data.metrics?.fight_probability >= 30) {
+            if (data.archived_to_bin) {
                 addNotification({
                     title: "High Risk Detected! Video automatically moved to Smart Bin (Archive).",
                     level: "Warning",
@@ -384,13 +384,13 @@ const Intelligence = () => {
                                                     p: 2,
                                                     borderRadius: 4,
                                                     textAlign: 'center',
-                                                    bgcolor: (analysisResult.metrics?.fight_probability > 30 || analysisResult.archived_to_bin) ? theme.palette.error.main : theme.palette.success.main,
+                                                    bgcolor: analysisResult.archived_to_bin ? theme.palette.error.main : theme.palette.success.main,
                                                     color: '#fff',
-                                                    boxShadow: (analysisResult.metrics?.fight_probability > 30 || analysisResult.archived_to_bin) ? `0 10px 20px ${alpha(theme.palette.error.main, 0.3)} ` : 'none'
+                                                    boxShadow: analysisResult.archived_to_bin ? `0 10px 20px ${alpha(theme.palette.error.main, 0.3)} ` : 'none'
                                                 }}>
-                                                    {(analysisResult.metrics?.fight_probability > 30 || analysisResult.archived_to_bin) ? <Shield size={20} style={{ marginBottom: 8 }} /> : <CheckCircle2 size={20} style={{ marginBottom: 8 }} />}
-                                                    <Typography variant="h5" sx={{ fontWeight: 900 }}>{(analysisResult.metrics?.fight_probability > 30 || analysisResult.archived_to_bin) ? 'ARCHIVED' : 'SECURE'}</Typography>
-                                                    <Typography variant="caption" sx={{ fontWeight: 700, opacity: 0.8 }}>{(analysisResult.metrics?.fight_probability > 30 || analysisResult.archived_to_bin) ? 'SMART BIN ACTIVE' : 'SYSTEM STATUS'}</Typography>
+                                                    {analysisResult.archived_to_bin ? <Shield size={20} style={{ marginBottom: 8 }} /> : <CheckCircle2 size={20} style={{ marginBottom: 8 }} />}
+                                                    <Typography variant="h5" sx={{ fontWeight: 900 }}>{analysisResult.archived_to_bin ? 'ARCHIVED' : 'SECURE'}</Typography>
+                                                    <Typography variant="caption" sx={{ fontWeight: 700, opacity: 0.8 }}>{analysisResult.archived_to_bin ? 'SMART BIN ACTIVE' : 'SYSTEM STATUS'}</Typography>
                                                 </Paper>
                                             </Grid>
                                         </Grid>

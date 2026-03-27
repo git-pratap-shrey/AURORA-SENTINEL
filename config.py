@@ -44,7 +44,7 @@ AI_SCORE_WEIGHT = 0.7
 # Alert thresholds
 ALERT_THRESHOLD = 60.0          # Uploaded video: alert if final_score exceeds this
 LIVE_ALERT_THRESHOLD = 65       # Live stream: alert if risk_score exceeds this
-RECORDING_THRESHOLD = 80        # Live stream: auto-start recording above this
+RECORDING_THRESHOLD = 50        # Live stream: auto-start recording above this
 
 # ML-to-AI gating
 ML_SKIP_AI_THRESHOLD = 20       # Skip AI analysis if ML score is below this
