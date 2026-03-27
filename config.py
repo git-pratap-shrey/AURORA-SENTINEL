@@ -109,8 +109,8 @@ CHAT_TIMELINE_LIMIT = int(os.getenv("CHAT_TIMELINE_LIMIT", "5"))
 
 # Agent model and provider (local or cloud)
 # Note: qwen3:4B is chosen as default based on user's local inventory.
-AGENT_MODEL = os.getenv("AGENT_MODEL", "qwen3:4B")
-AGENT_PROVIDER = os.getenv("AGENT_PROVIDER", "ollama_local")
+AGENT_MODEL = os.getenv("AGENT_MODEL", "kimi-k2.5:cloud")
+AGENT_PROVIDER = os.getenv("AGENT_PROVIDER", "ollama_cloud")
 
 # Agent logic constraints
 AGENT_MAX_TOOL_CALLS = int(os.getenv("AGENT_MAX_TOOL_CALLS", "3"))
