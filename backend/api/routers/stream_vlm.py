@@ -2,6 +2,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from backend.services.ml_service import ml_service
 from backend.services.video_storage_service import video_storage_service
 from backend.services.vlm_service import vlm_service # NEW
+from backend.services.clip_capture_service import clip_capture_service
 from backend.db.database import SessionLocal
 from backend.db.models import Alert
 import cv2
@@ -163,6 +164,7 @@ async def websocket_vlm_feed(websocket: WebSocket):
                         detection = ml_service.detector.process_frame(frame)
                         risk_score, risk_factors = ml_service.risk_engine.calculate_risk(detection)
                         risk_score = risk_score or 0
+                        print(f"[VLM-DEBUG] risk_score={risk_score:.1f}")
                         
                         # 3. Trigger New VLM Analysis (If idle)
                         now = time.time()
@@ -197,20 +199,52 @@ async def websocket_vlm_feed(websocket: WebSocket):
 
                     # Alert Logic
                     alert = None
+                    now_ts = datetime.utcnow().timestamp()
                     if risk_score > 65:
                         alert = ml_service.risk_engine.generate_alert(risk_score, risk_factors if not is_vlm_running else [])
                         alert['level'] = alert['level'].upper()
-                        # Add VLM insight to alert
                         alert['ai_analysis'] = current_narrative
                         
-                        if risk_score > 80:
-                            video_storage_service.start_recording("CAM-01")
-                        
-                        now_ts = datetime.utcnow().timestamp()
                         if alert and (now_ts - last_alert_time > ALERT_COOLDOWN):
                             loop = asyncio.get_event_loop()
-                            await loop.run_in_executor(None, save_alert_sync, alert)
+                            alert_id = await loop.run_in_executor(None, save_alert_sync, alert)
                             last_alert_time = now_ts
+                            print(f"[ClipCapture] Alert saved id={alert_id}, score={risk_score:.1f}")
+
+                            if alert_id is not None:
+                                capture_ts = datetime.utcnow()
+                                async def _delayed_capture(aid, ts, score):
+                                    db = SessionLocal()
+                                    try:
+                                        from backend.db.models import SystemSetting
+                                        row = db.query(SystemSetting).filter(
+                                            SystemSetting.key == "clip_duration_seconds"
+                                        ).first()
+                                        total_duration = int(row.value) if row else 10
+                                    except Exception:
+                                        total_duration = 10
+                                    finally:
+                                        db.close()
+                                    post_seconds = max(1, int(total_duration * 0.3))
+                                    print(f"[ClipCapture] Waiting {post_seconds}s for post-event footage...")
+                                    await asyncio.sleep(post_seconds)
+                                    print(f"[ClipCapture] Cutting clip for alert_id={aid}...")
+                                    result = await clip_capture_service.handle_threshold_crossing(
+                                        camera_id="CAM-01",
+                                        timestamp=ts,
+                                        final_score=float(score),
+                                        alert_id=aid,
+                                    )
+                                    if result:
+                                        print(f"[ClipCapture] Clip saved: id={result.id} path={result.file_path}")
+                                    else:
+                                        print(f"[ClipCapture] Clip capture returned None — check smart_bin_enabled setting and storage/clips/ for recording files")
+                                asyncio.create_task(_delayed_capture(alert_id, capture_ts, risk_score))
+
+                    # Start rolling buffer when risk begins escalating (>30).
+                    # No-op if already recording. Restart if the 30s chunk auto-stopped.
+                    if risk_score > 30:
+                        video_storage_service.start_recording("CAM-01")
 
                     video_storage_service.add_frame("CAM-01", frame)
 

@@ -1,14 +1,15 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from backend.services.ml_service import ml_service
 from backend.services.video_storage_service import video_storage_service
+from backend.services.clip_capture_service import clip_capture_service
 from backend.db.database import SessionLocal
-from backend.db.models import Alert
+from backend.db.models import Alert, SystemSetting
 import cv2
 import numpy as np
 import asyncio
 import base64
 from datetime import datetime
-import time # Added for duration measurement
+import time
 
 router = APIRouter()
 
@@ -99,20 +100,51 @@ async def websocket_live_feed(websocket: WebSocket):
                     # 3. Calculate Risk
                     risk_score, risk_factors = ml_service.risk_engine.calculate_risk(detection)
                     risk_score = risk_score or 0
+                    print(f"[DEBUG] risk_score={risk_score:.1f}, weapons={len(detection.get('weapons',[]))}, objects={[o['class'] for o in detection.get('objects',[]) if o['class'] in ['knife','scissors','baseball bat']]}")
                         
                     alert = None
                     if risk_score > 65: # New threshold from previous task
                         alert = ml_service.risk_engine.generate_alert(risk_score, risk_factors)
                         alert['level'] = alert['level'].upper()
-                        
-                        if risk_score > 80:
-                            video_storage_service.start_recording("CAM-01")
+                        print(f"[ClipCapture] Risk={risk_score:.1f} > 65, alert generated")
                         
                         now = datetime.utcnow().timestamp()
                         if alert and (now - last_alert_time > ALERT_COOLDOWN):
                             loop = asyncio.get_event_loop()
-                            await loop.run_in_executor(None, save_alert_sync, alert)
+                            alert_id = await loop.run_in_executor(None, save_alert_sync, alert)
                             last_alert_time = now
+                            print(f"[ClipCapture] Alert saved id={alert_id}, score={risk_score:.1f}")
+
+                            if alert_id is not None:
+                                capture_ts = datetime.utcnow()
+                                async def _delayed_capture(aid, ts, score):
+                                    db = SessionLocal()
+                                    try:
+                                        row = db.query(SystemSetting).filter(
+                                            SystemSetting.key == "clip_duration_seconds"
+                                        ).first()
+                                        total_duration = int(row.value) if row else 10
+                                    except Exception:
+                                        total_duration = 10
+                                    finally:
+                                        db.close()
+                                    post_seconds = max(1, int(total_duration * 0.3))
+                                    await asyncio.sleep(post_seconds)
+                                    result = await clip_capture_service.handle_threshold_crossing(
+                                        camera_id="CAM-01",
+                                        timestamp=ts,
+                                        final_score=float(score),
+                                        alert_id=aid,
+                                    )
+                                    if result:
+                                        print(f"[ClipCapture] Clip saved: id={result.id} path={result.file_path}")
+                                    else:
+                                        print(f"[ClipCapture] Clip capture returned None — check smart_bin_enabled and storage/clips/")
+                                asyncio.create_task(_delayed_capture(alert_id, capture_ts, risk_score))
+
+                    # Start rolling buffer when risk escalates so footage is ready for clip capture
+                    if risk_score > 30:
+                        video_storage_service.start_recording("CAM-01")
 
                     # Always add frame to active recording
                     video_storage_service.add_frame("CAM-01", frame)

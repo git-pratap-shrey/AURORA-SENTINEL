@@ -65,55 +65,48 @@ const IntelligencePanel = ({ currentFile }) => {
         if (e) e.preventDefault();
         const questionToAsk = customQuestion || chatQuery;
         
-        if (!questionToAsk && !currentFile) {
-            setChatHistory(prev => [...prev, {
-                type: 'error',
-                message: "Please ask a question about the video."
-            }]);
+        if (!questionToAsk) {
+            setChatHistory(prev => [...prev, { type: 'error', message: "Please type a question." }]);
             return;
         }
 
-        // Add user question to history
-        if (questionToAsk) {
-            setChatHistory(prev => [...prev, {
-                type: 'user',
-                message: questionToAsk
-            }]);
-        }
-
+        setChatHistory(prev => [...prev, { type: 'user', message: questionToAsk }]);
         setIsChatting(true);
-        setChatQuery(''); // Clear input after sending
+        setChatQuery('');
         
         try {
-            const res = await fetch(`${API_BASE_URL}/intelligence/chat`, {
+            const history = chatHistory.slice(-6).map(m => ({
+                role: m.type === 'user' ? 'user' : 'assistant',
+                content: m.message
+            }));
+
+            // Always use the NLU chatbot.
+            // Pass filename if a video is loaded — backend will use stored metadata for video Q&A.
+            const res = await fetch(`${API_BASE_URL}/chatbot/query`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    question: questionToAsk || "What is happening in this video?",
-                    filename: currentFile || undefined
+                    message: questionToAsk,
+                    history,
+                    filename: currentFile || null,
                 })
             });
-            
-            if (!res.ok) {
-                throw new Error(`Server returned ${res.status}`);
-            }
-            
+            if (!res.ok) throw new Error(`Server returned ${res.status}`);
             const data = await res.json();
-            const answer = data.answer || "No answer received from AI";
-            
-            // Add AI response to history
             setChatHistory(prev => [...prev, {
                 type: 'ai',
-                message: answer,
-                filename: data.filename,
-                confidence: data.confidence
+                message: data.answer || "No results found.",
+                results: data.results || [],
+                result_type: data.result_type || 'none',
+                confidence: data.confidence ?? null,
+                vlm_verified: data.vlm_verified || false,
+                filename: currentFile || null,
             }]);
-            
         } catch (err) {
             console.error("Chat failed:", err);
             setChatHistory(prev => [...prev, {
                 type: 'error',
-                message: `Error: ${err.message}. Make sure the AI layer is running and a video has been uploaded.`
+                message: `Error: ${err.message}`
             }]);
         } finally {
             setIsChatting(false);
@@ -392,25 +385,61 @@ const IntelligencePanel = ({ currentFile }) => {
                             {chatHistory.length === 0 ? (
                                 <Box sx={{ textAlign: 'center', mt: 5 }}>
                                     <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.2)', fontWeight: 800, mb: 3 }}>
-                                        ASK A QUESTION ABOUT THE VIDEO
+                                        {currentFile ? 'ASK A QUESTION ABOUT THE VIDEO' : 'ASK ABOUT ALERTS & INCIDENTS'}
                                     </Typography>
                                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, px: 2 }}>
-                                        <Button
-                                            variant="outlined"
-                                            color="secondary"
-                                            onClick={(e) => handleChat(e, "What is happening in this video?")}
-                                            sx={{ borderRadius: 2, fontWeight: 800 }}
-                                        >
-                                            Get Video Summary
-                                        </Button>
-                                        <Button
-                                            variant="outlined"
-                                            color="secondary"
-                                            onClick={(e) => handleChat(e, "Is this a real fight or boxing/sparring?")}
-                                            sx={{ borderRadius: 2, fontWeight: 800 }}
-                                        >
-                                            Fight vs Boxing?
-                                        </Button>
+                                        {currentFile ? (
+                                            <>
+                                                <Button variant="outlined" color="secondary"
+                                                    onClick={(e) => handleChat(e, "What is happening in this video?")}
+                                                    sx={{ borderRadius: 2, fontWeight: 800 }}>
+                                                    Summarize Video
+                                                </Button>
+                                                <Button variant="outlined" color="secondary"
+                                                    onClick={(e) => handleChat(e, "Is this a real fight or boxing/sparring?")}
+                                                    sx={{ borderRadius: 2, fontWeight: 800 }}>
+                                                    Fight vs Boxing?
+                                                </Button>
+                                                <Button variant="outlined" color="secondary"
+                                                    onClick={(e) => handleChat(e, "Are there any weapons visible?")}
+                                                    sx={{ borderRadius: 2, fontWeight: 800 }}>
+                                                    Weapons Detected?
+                                                </Button>
+                                                <Button variant="outlined" color="warning"
+                                                    onClick={(e) => handleChat(e, "Show high risk alerts today")}
+                                                    sx={{ borderRadius: 2, fontWeight: 800 }}>
+                                                    Today's Alerts
+                                                </Button>
+                                                <Button variant="outlined" color="warning"
+                                                    onClick={(e) => handleChat(e, "System overview")}
+                                                    sx={{ borderRadius: 2, fontWeight: 800 }}>
+                                                    System Overview
+                                                </Button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Button variant="outlined" color="secondary"
+                                                    onClick={(e) => handleChat(e, "Show high risk alerts today")}
+                                                    sx={{ borderRadius: 2, fontWeight: 800 }}>
+                                                    Today's High Risk Alerts
+                                                </Button>
+                                                <Button variant="outlined" color="secondary"
+                                                    onClick={(e) => handleChat(e, "Find fights in the last hour")}
+                                                    sx={{ borderRadius: 2, fontWeight: 800 }}>
+                                                    Recent Fights
+                                                </Button>
+                                                <Button variant="outlined" color="secondary"
+                                                    onClick={(e) => handleChat(e, "System overview")}
+                                                    sx={{ borderRadius: 2, fontWeight: 800 }}>
+                                                    System Overview
+                                                </Button>
+                                                <Button variant="outlined" color="secondary"
+                                                    onClick={(e) => handleChat(e, "Show critical incidents last night")}
+                                                    sx={{ borderRadius: 2, fontWeight: 800 }}>
+                                                    Last Night's Incidents
+                                                </Button>
+                                            </>
+                                        )}
                                     </Box>
                                 </Box>
                             ) : (
@@ -455,7 +484,7 @@ const IntelligencePanel = ({ currentFile }) => {
                                                 }}>
                                                     {msg.message}
                                                 </Typography>
-                                                {msg.type === 'ai' && msg.confidence !== undefined && (
+                                                {msg.type === 'ai' && msg.confidence !== undefined && msg.confidence !== null && (
                                                     <Typography variant="caption" sx={{ 
                                                         color: 'rgba(255,255,255,0.3)', 
                                                         fontWeight: 700,
@@ -463,7 +492,52 @@ const IntelligencePanel = ({ currentFile }) => {
                                                         mt: 1
                                                     }}>
                                                         Confidence: {(msg.confidence * 100).toFixed(0)}%
+                                                        {msg.vlm_verified && ' · ✓ VLM Verified'}
                                                     </Typography>
+                                                )}
+                                                {/* Alert result cards */}
+                                                {msg.type === 'ai' && msg.results?.length > 0 && (
+                                                    <Box sx={{ mt: 1.5 }}>
+                                                        {msg.result_type === 'stats' && msg.results.map((r, i) => (
+                                                            <Box key={i} sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, mt: 1 }}>
+                                                                {[['Total', r.total_alerts], ['Today', r.today], ['Critical', r.critical], ['Pending', r.pending]].map(([label, val]) => (
+                                                                    <Box key={label} sx={{ bgcolor: 'rgba(255,255,255,0.05)', borderRadius: 1, p: 1, textAlign: 'center' }}>
+                                                                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)', display: 'block' }}>{label}</Typography>
+                                                                        <Typography variant="body2" sx={{ fontWeight: 800, color: '#fff' }}>{val}</Typography>
+                                                                    </Box>
+                                                                ))}
+                                                            </Box>
+                                                        ))}
+                                                        {msg.result_type === 'alerts' && msg.results.slice(0, 5).map((r, i) => {
+                                                            const levelColor = { CRITICAL: '#ef4444', HIGH: '#f97316', MEDIUM: '#eab308', LOW: '#22c55e' }[r.level?.toUpperCase()] || '#6b7280';
+                                                            const ts = r.timestamp ? r.timestamp.replace('T', ' ').slice(0, 16) : '';
+                                                            return (
+                                                                <Box key={i} sx={{ mt: 1, p: 1.5, borderRadius: 1, bgcolor: 'rgba(255,255,255,0.03)', borderLeft: `3px solid ${levelColor}` }}>
+                                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                                                                        <Typography variant="caption" sx={{ fontWeight: 800, color: levelColor }}>{r.level?.toUpperCase()}</Typography>
+                                                                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)' }}>{ts}</Typography>
+                                                                    </Box>
+                                                                    <Typography variant="caption" sx={{ color: '#cbd5e1', display: 'block' }}>{r.camera_id} — {r.location}</Typography>
+                                                                    {r.ai_explanation && <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)', fontStyle: 'italic', display: 'block', mt: 0.5 }}>{r.ai_explanation.slice(0, 80)}...</Typography>}
+                                                                    {r.clip_url && (
+                                                                        <Typography component="a" href={`${API_BASE_URL}${r.clip_url}`} target="_blank"
+                                                                            variant="caption" sx={{ color: theme.palette.primary.main, fontWeight: 700, display: 'block', mt: 0.5 }}>
+                                                                            ▶ Play Clip
+                                                                        </Typography>
+                                                                    )}
+                                                                </Box>
+                                                            );
+                                                        })}
+                                                        {msg.result_type === 'video_events' && msg.results.slice(0, 5).map((r, i) => (
+                                                            <Box key={i} sx={{ mt: 1, p: 1.5, borderRadius: 1, bgcolor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                                                                    <Typography variant="caption" sx={{ fontWeight: 800, color: theme.palette.primary.main }}>{r.filename}</Typography>
+                                                                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)' }}>@{r.timestamp?.toFixed(1)}s</Typography>
+                                                                </Box>
+                                                                <Typography variant="caption" sx={{ color: '#cbd5e1', display: 'block' }}>{r.description?.slice(0, 100)}...</Typography>
+                                                            </Box>
+                                                        ))}
+                                                    </Box>
                                                 )}
                                             </Paper>
                                         </Box>
@@ -502,7 +576,7 @@ const IntelligencePanel = ({ currentFile }) => {
                                 <TextField
                                     fullWidth
                                     size="small"
-                                    placeholder="Ask about the video..."
+                                    placeholder={currentFile ? "Ask about video or alerts/incidents..." : "Ask about alerts, incidents, counts..."}
                                     value={chatQuery}
                                     onChange={(e) => setChatQuery(e.target.value)}
                                     disabled={isChatting}

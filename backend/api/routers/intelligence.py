@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException, BackgroundTasks, UploadFile, File
 from pydantic import BaseModel
 from typing import List, Optional
 from backend.services.search_service import search_service
@@ -7,6 +7,7 @@ import os
 import cv2
 from PIL import Image
 from backend.services.vlm_service import vlm_service
+from datetime import datetime
 
 router = APIRouter()
 
@@ -28,6 +29,30 @@ class SearchResult(BaseModel):
     provider: str
     confidence: float
     timestamp_seconds: Optional[float] = None
+
+@router.post("/upload")
+async def upload_for_intelligence(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...)
+):
+    """
+    Upload a video file directly into the intelligence pipeline.
+    The file is saved to storage/clips and processed in the background.
+    """
+    upload_dir = "storage/clips"
+    os.makedirs(upload_dir, exist_ok=True)
+
+    safe_name = file.filename.replace(" ", "_")
+    dest_path = os.path.join(upload_dir, safe_name)
+
+    with open(dest_path, "wb") as f:
+        content = await file.read()
+        f.write(content)
+
+    print(f"[Intelligence] Uploaded {safe_name} ({len(content)//1024}KB) → queued for processing")
+    background_tasks.add_task(offline_processor.process_video, safe_name)
+    return {"status": "queued", "filename": safe_name, "size_kb": len(content) // 1024}
+
 
 @router.post("/index")
 async def trigger_indexing(background_tasks: BackgroundTasks):

@@ -5,6 +5,7 @@ from ultralytics import YOLO
 import torch
 from concurrent.futures import ThreadPoolExecutor
 import time
+from huggingface_hub import hf_hub_download
 
 class UnifiedDetector:
     """
@@ -32,17 +33,16 @@ class UnifiedDetector:
             self.pose_model = YOLO('yolov8n-pose.pt')
             self.pose_model.to(self.device)
             
-            # Weapon detection model (NEW) - Fix misspelling and use available yolov8s.pt if possible
-            weapon_model_file = 'yolov8s.pt' if os.path.exists('yolov8s.pt') else 'yolov8n.pt'
-            self.weapon_model = YOLO(weapon_model_file)
+            # Weapon detection model - dedicated firearm/weapon model from HuggingFace
+            # Covers: gun, pistol, rifle (89% mAP)
+            self.weapon_model = self._load_weapon_model()
             self.weapon_model.to(self.device)
             
         except Exception as e:
-            print(f"Warning: Failed to load models on {self.device}, falling back to CPU or raising error: {e}")
+            print(f"Warning: Failed to load models on {self.device}, falling back to CPU: {e}")
             self.object_model = YOLO('yolov8n.pt')
             self.pose_model = YOLO('yolov8n-pose.pt')
-            weapon_model_file = 'yolov8s.pt' if os.path.exists('yolov8s.pt') else 'yolov8n.pt'
-            self.weapon_model = YOLO(weapon_model_file)
+            self.weapon_model = self._load_weapon_model()
             self.device = 'cpu'
         
         # Critical objects from COCO (standard models like yolov8n/s)
@@ -60,6 +60,12 @@ class UnifiedDetector:
         # Specific classes to be treated as WEAPONS
         self.weapon_class_names = ['knife', 'baseball bat', 'scissors']
         
+        # Weapon keywords the dedicated model can output
+        self.weapon_keywords = [
+            'gun', 'weapon', 'pistol', 'rifle', 'firearm', 
+            'knife', 'machete', 'blade', 'shotgun', 'handgun'
+        ]
+        
         # Initialize Simple Tracker (Fallback since YOLO track crashes on Windows)
         self.tracker = SimpleTracker()
         
@@ -72,6 +78,39 @@ class UnifiedDetector:
         self.use_half = False
         print("[INFO] Using FP32 (Full Precision) for stability.")
         
+    def _load_weapon_model(self):
+        """
+        Load dedicated weapon detection model.
+        Priority:
+          1. Local cached model (models/weights/weapon_model.pt)
+          2. HuggingFace: Subh775/Firearm_Detection_Yolov8n (89% mAP, covers guns/pistols/rifles)
+          3. Fallback: yolov8n.pt (COCO only - knife/bat/scissors)
+        """
+        local_path = os.path.join(os.path.dirname(__file__), '..', 'weights', 'weapon_model.pt')
+        local_path = os.path.normpath(local_path)
+        
+        if os.path.exists(local_path):
+            print(f"[Weapon Model] Loading from local cache: {local_path}")
+            return YOLO(local_path)
+        
+        try:
+            print("[Weapon Model] Downloading from HuggingFace (Subh775/Firearm_Detection_Yolov8n)...")
+            os.makedirs(os.path.dirname(local_path), exist_ok=True)
+            model_path = hf_hub_download(
+                repo_id="Subh775/Firearm_Detection_Yolov8n",
+                filename="weights/best.pt",
+                local_dir=os.path.dirname(local_path)
+            )
+            # Cache it for next run
+            import shutil
+            shutil.copy(model_path, local_path)
+            print(f"[Weapon Model] Downloaded and cached to {local_path}")
+            return YOLO(local_path)
+        except Exception as e:
+            print(f"[Weapon Model] HuggingFace download failed: {e}")
+            print("[Weapon Model] Falling back to COCO model (no gun detection)")
+            return YOLO('yolov8n.pt')
+
     def _check_blur(self, frame):
         """Innovation #16: Blur Detection using Laplacian Variance"""
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -155,41 +194,44 @@ class UnifiedDetector:
     
     def detect_weapons(self, frame):
         """
-        Detect weapons in frame using the specialized weapon model if it has specific classes.
-        Since we found that standard YOLO models misidentify everything, we strictly filter here.
+        Two-layer weapon detection:
+          1. Gun model (5.9MB, 89% mAP) → guns/pistols/rifles, conf > 0.82 + shape filter
+          2. COCO via detect_objects()   → knife (43), bat (34), scissors (76)
+        Clean and reliable — no false positives from broad single-class models.
         """
-        # If weapon_model is just a general YOLO model, we use it to look for specific COCO weapon classes
+        weapons = []
+
         results = self.weapon_model.predict(
-            frame, 
-            verbose=False, 
+            frame,
+            verbose=False,
             device=self.device,
-            conf=0.4, # Higher confidence for weapons
+            conf=0.82,
             half=self.use_half
         )[0]
-        
-        weapons = []
+
         if results.boxes is not None:
-            # Check what classes this model actually has
             names = results.names
-            
             for box in results.boxes:
                 cls_id = int(box.cls[0])
                 cls_name = names.get(cls_id, 'unknown').lower()
                 conf = float(box.conf[0])
                 xyxy = box.xyxy[0].cpu().numpy()
-                
-                # CRITICAL: Only accept if it's explicitly a weapon class
-                # Also check for 'handgun' or 'pistol' specifically
-                is_valid_weapon = any(w in cls_name for w in ['gun', 'weapon', 'pistol', 'rifle', 'knife', 'machete'])
-                
-                if (is_valid_weapon or cls_id in [43, 34, 76]) and conf > 0.60:
+
+                # Aspect ratio: guns are wider than tall, phones/knives are thin
+                w = xyxy[2] - xyxy[0]
+                h = xyxy[3] - xyxy[1]
+                is_gun_shaped = (w / (h + 1e-6)) > 0.55
+
+                is_valid_weapon = any(w_kw in cls_name for w_kw in self.weapon_keywords)
+
+                if is_valid_weapon and is_gun_shaped and conf > 0.82:
                     weapons.append({
                         'class': 'weapon',
-                        'sub_class': cls_name if cls_name != 'unknown' else 'unidentified_threat',
+                        'sub_class': cls_name if cls_name != 'unknown' else 'firearm',
                         'confidence': conf,
                         'bbox': xyxy.tolist()
                     })
-        
+
         return weapons
 
     def process_frame(self, frame):

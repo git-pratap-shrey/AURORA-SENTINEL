@@ -689,6 +689,17 @@ class VLMService:
         descriptions = []
         
         import re
+
+        def _is_negated(text, keyword, window=6):
+            negations = {'not', 'no', 'never', 'without', "isn't", "aren't", "doesn't",
+                         "don't", "neither", "nor", 'non', 'nothing', 'nobody'}
+            pattern = r'\b' + re.escape(keyword) + r'\b'
+            for m in re.finditer(pattern, text):
+                preceding = text[:m.start()].split()[-window:]
+                if any(neg in preceding for neg in negations):
+                    return True
+            return False
+
         threat_keywords = {
             "fight": 85, "fighting": 85, "punching": 85, "brawl": 90,
             "shoving": 65, "aggressive": 65, "confrontation": 60,
@@ -699,33 +710,36 @@ class VLMService:
         for p_name, res in results.items():
             if not isinstance(res, str): continue
             
-            # SANITIZATION: Filter out technical errors and rate limits (Innovation #25)
             if any(x in res.lower() for x in ["error:", "rate limit", "quota", "503", "429"]):
                 continue
             
-            # 1. Extract Local Risk from this provider's text
             local_risk = base_risk
             lower_desc = res.lower()
             for k, v in threat_keywords.items():
                 if re.search(r'\b' + re.escape(k) + r'\b', lower_desc):
-                    local_risk = max(local_risk, v)
+                    if not _is_negated(lower_desc, k):
+                        local_risk = max(local_risk, v)
             
-            # 2. Apply Weight
             w = weights.get(p_name, 0.1)
             weighted_risk_sum += local_risk * w
             total_weight += w
             
-            # 3. Clean and collect description
             clean_desc = res.strip().replace("User: <image>\n", "").replace("\nAssistant:", "")
             descriptions.append(f"[{p_name.upper()}]: {clean_desc}")
 
-        # Final Synthesis
         final_risk = round(weighted_risk_sum / total_weight) if total_weight > 0 else base_risk
-        # Ensure Boxing/Sport differentiation is respected (Global Rule)
         all_text = " ".join(descriptions).lower()
-        if "boxing" in all_text or "sparring" in all_text or "referee" in all_text or "boxing ring" in all_text or "boxing gloves" in all_text:
-            if all(x not in all_text for x in ["street fight", "unauthorized", "assault", "ambush"]):
-                final_risk = min(final_risk, 15)
+        # Sport/prank override — only if NOT negated
+        is_sport = any(
+            kw in all_text and not _is_negated(all_text, kw)
+            for kw in ["boxing", "sparring", "referee", "boxing ring", "boxing gloves"]
+        )
+        is_real_fight = any(
+            kw in all_text and not _is_negated(all_text, kw)
+            for kw in ["street fight", "unauthorized", "assault", "ambush"]
+        )
+        if is_sport and not is_real_fight:
+            final_risk = min(final_risk, 15)
 
         return {
             "risk_score": final_risk,
