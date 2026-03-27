@@ -6,10 +6,19 @@ from datetime import datetime
 
 router = APIRouter()
 
-# Configurable Storage Paths
-STORAGE_PATH = os.path.abspath(os.getenv("CLIPS_PATH", "storage/clips"))
-BIN_PATH = os.path.abspath(os.getenv("BIN_PATH", "storage/bin"))
-PROCESSED_PATH = os.path.abspath(os.getenv("PROCESSED_PATH", "storage/processed"))
+# 4 dirname calls: archive.py → routers/ → api/ → backend/ → project root
+_PROJECT_ROOT = os.path.dirname(
+    os.path.dirname(
+        os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__))
+        )
+    )
+)
+
+# Configurable Storage Paths - resolve relative to project root
+STORAGE_PATH = os.path.join(_PROJECT_ROOT, os.getenv("CLIPS_PATH", "storage/clips"))
+BIN_PATH = os.path.join(_PROJECT_ROOT, os.getenv("BIN_PATH", "storage/bin"))
+PROCESSED_PATH = os.path.join(_PROJECT_ROOT, os.getenv("PROCESSED_PATH", "storage/processed"))
 
 os.makedirs(STORAGE_PATH, exist_ok=True)
 os.makedirs(BIN_PATH, exist_ok=True)

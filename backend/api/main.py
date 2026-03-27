@@ -9,6 +9,13 @@ from backend.services.ml_service import ml_service
 import os
 import shutil
 
+# 3 dirname calls: main.py → api/ → backend/ → project root
+_PROJECT_ROOT = os.path.dirname(
+    os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__))
+    )
+)
+
 # Create tables
 Base.metadata.create_all(bind=engine)
 ensure_alert_columns()
@@ -28,8 +35,8 @@ app.add_middleware(
 )
 
 # Serve recorded videos
-os.makedirs("storage/recordings", exist_ok=True)
-app.mount("/recordings", StaticFiles(directory="storage/recordings"), name="recordings")
+os.makedirs(os.path.join(_PROJECT_ROOT, "storage/recordings"), exist_ok=True)
+app.mount("/recordings", StaticFiles(directory=os.path.join(_PROJECT_ROOT, "storage/recordings")), name="recordings")
 
 from fastapi.responses import JSONResponse
 from fastapi import Request

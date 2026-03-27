@@ -5,6 +5,13 @@ import shutil
 from datetime import datetime, timedelta
 import threading
 
+# 3 dirname calls: video_storage_service.py → services/ → backend/ → project root
+_PROJECT_ROOT = os.path.dirname(
+    os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__))
+    )
+)
+
 class Recording:
     def __init__(self, writer, path, start_time):
         self.writer = writer
@@ -13,7 +20,10 @@ class Recording:
         self.last_frame_time = start_time
 
 class VideoStorageService:
-    def __init__(self, base_path="storage"):
+    def __init__(self, base_path=None):
+        # Default to project root's storage directory
+        if base_path is None:
+            base_path = os.path.join(_PROJECT_ROOT, "storage")
         self.base_path = base_path
         self.clips_path = os.path.join(base_path, "clips")
         self.bin_path = os.path.join(base_path, "bin")

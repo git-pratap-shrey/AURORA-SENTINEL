@@ -1,186 +1,102 @@
 {
-  "test_date": "2026-03-03T16:28:20.832939",
-  "total_videos": 49,
-  "passed": 23,
-  "failed": 26,
-  "pass_rate": 0.46938775510204084,
+  "test_date": "2026-03-27T09:20:32.461327",
+  "total_videos": 17,
+  "passed": 5,
+  "failed": 12,
+  "pass_rate": 0.29411764705882354,
   "pass_rate_threshold": 0.8,
   "ml_threshold": 30.0,
   "vlm_threshold": 30.0,
   "statistics": {
-    "ml_mean": 30.855562604334438,
-    "ml_max": 72.72000000000001,
-    "ai_mean": 1.0204081632653061,
+    "ml_mean": 46.097700292023504,
+    "ml_max": 97.2,
+    "ai_mean": 9.411764705882353,
     "ai_max": 10.0,
-    "final_mean": 30.855562604334438,
-    "final_max": 72.72000000000001
+    "final_mean": 22.262143128182085,
+    "final_max": 36.16
   },
   "failed_videos": [
     {
-      "name": "Normal_Videos_015_x264.mp4",
-      "max_ml": 34.894999999999996,
-      "max_ai": 0.0,
-      "max_final": 34.894999999999996
-    },
-    {
       "name": "Normal_Videos_100_x264.mp4",
-      "max_ml": 33.9694,
-      "max_ai": 0.0,
-      "max_final": 33.9694
+      "max_ml": 52.65,
+      "max_ai": 10.0,
+      "max_final": 22.794999999999998
     },
     {
       "name": "Normal_Videos_129_x264.mp4",
-      "max_ml": 48.7945,
-      "max_ai": 0.0,
-      "max_final": 48.7945
+      "max_ml": 52.096199999999996,
+      "max_ai": 10.0,
+      "max_final": 22.628859999999996
     },
     {
       "name": "Normal_Videos_150_x264.mp4",
-      "max_ml": 32.16989999999999,
-      "max_ai": 0.0,
-      "max_final": 32.16989999999999
+      "max_ml": 43.080999999999996,
+      "max_ai": 10.0,
+      "max_final": 19.9243
     },
     {
-      "name": "Normal_Videos_246_x264.mp4",
-      "max_ml": 39.556599999999996,
-      "max_ai": 0.0,
-      "max_final": 39.556599999999996
-    },
-    {
-      "name": "Normal_Videos_247_x264.mp4",
-      "max_ml": 40.4328,
-      "max_ai": 0.0,
-      "max_final": 40.4328
-    },
-    {
-      "name": "Normal_Videos_289_x264.mp4",
-      "max_ml": 31.060114285714285,
-      "max_ai": 0.0,
-      "max_final": 31.060114285714285
+      "name": "Normal_Videos_248_x264.mp4",
+      "max_ml": 36.594,
+      "max_ai": 10.0,
+      "max_final": 19.722942857142858
     },
     {
       "name": "Normal_Videos_310_x264.mp4",
-      "max_ml": 38.96643146853147,
-      "max_ai": 0.0,
-      "max_final": 38.96643146853147
+      "max_ml": 97.2,
+      "max_ai": 10.0,
+      "max_final": 36.16
     },
     {
       "name": "Normal_Videos_312_x264.mp4",
-      "max_ml": 35.77913146853146,
-      "max_ai": 0.0,
-      "max_final": 35.77913146853146
+      "max_ml": 61.89155520847211,
+      "max_ai": 10.0,
+      "max_final": 25.567466562541632
     },
     {
       "name": "Normal_Videos_345_x264.mp4",
-      "max_ml": 60.57500000000001,
+      "max_ml": 62.949999999999996,
       "max_ai": 10.0,
-      "max_final": 60.57500000000001
-    },
-    {
-      "name": "Normal_Videos_352_x264.mp4",
-      "max_ml": 40.9356,
-      "max_ai": 0.0,
-      "max_final": 40.9356
-    },
-    {
-      "name": "Normal_Videos_360_x264.mp4",
-      "max_ml": 63.11999999999999,
-      "max_ai": 10.0,
-      "max_final": 63.11999999999999
-    },
-    {
-      "name": "Normal_Videos_365_x264.mp4",
-      "max_ml": 63.073,
-      "max_ai": 10.0,
-      "max_final": 63.073
-    },
-    {
-      "name": "Normal_Videos_417_x264.mp4",
-      "max_ml": 42.21509999999999,
-      "max_ai": 0.0,
-      "max_final": 42.21509999999999
-    },
-    {
-      "name": "Normal_Videos_439_x264.mp4",
-      "max_ml": 49.57933571428571,
-      "max_ai": 0.0,
-      "max_final": 49.57933571428571
+      "max_final": 25.884999999999998
     },
     {
       "name": "Normal_Videos_452_x264.mp4",
-      "max_ml": 47.8753357142857,
-      "max_ai": 0.0,
-      "max_final": 47.8753357142857
-    },
-    {
-      "name": "Normal_Videos_453_x264.mp4",
-      "max_ml": 41.3936,
-      "max_ai": 0.0,
-      "max_final": 41.3936
-    },
-    {
-      "name": "Normal_Videos_478_x264.mp4",
-      "max_ml": 40.8596,
-      "max_ai": 0.0,
-      "max_final": 40.8596
-    },
-    {
-      "name": "Normal_Videos_722_x264.mp4",
-      "max_ml": 45.97739999999999,
-      "max_ai": 0.0,
-      "max_final": 45.97739999999999
+      "max_ml": 52.65,
+      "max_ai": 10.0,
+      "max_final": 22.794999999999998
     },
     {
       "name": "Normal_Videos_745_x264.mp4",
-      "max_ml": 56.31200000000002,
-      "max_ai": 0.0,
-      "max_final": 56.31200000000002
-    },
-    {
-      "name": "Normal_Videos_758_x264.mp4",
-      "max_ml": 71.16818181818182,
+      "max_ml": 62.07499999999999,
       "max_ai": 10.0,
-      "max_final": 71.16818181818182
+      "max_final": 25.622499999999995
     },
     {
-      "name": "Normal_Videos_781_x264.mp4",
-      "max_ml": 72.72000000000001,
+      "name": "Normal_Videos_831_x264.mp4",
+      "max_ml": 50.519999999999996,
       "max_ai": 10.0,
-      "max_final": 72.72000000000001
+      "max_final": 22.156
     },
     {
-      "name": "Normal_Videos_798_x264.mp4",
-      "max_ml": 52.8527,
-      "max_ai": 0.0,
-      "max_final": 52.8527
+      "name": "Normal_Videos_881_x264.mp4",
+      "max_ml": 59.559649200439466,
+      "max_ai": 10.0,
+      "max_final": 24.86789476013184
     },
     {
-      "name": "Normal_Videos_801_x264.mp4",
-      "max_ml": 52.81899999999998,
-      "max_ai": 0.0,
-      "max_final": 52.81899999999998
-    },
-    {
-      "name": "Normal_Videos_828_x264.mp4",
-      "max_ml": 45.1568,
-      "max_ai": 0.0,
-      "max_final": 45.1568
-    },
-    {
-      "name": "Normal_Videos_929_x264.mp4",
-      "max_ml": 37.77199999999999,
-      "max_ai": 0.0,
-      "max_final": 37.77199999999999
+      "name": "Normal_Videos_885_x264.mp4",
+      "max_ml": 38.66014031839371,
+      "max_ai": 10.0,
+      "max_final": 18.59804209551811
     }
   ],
   "detailed_results": [
     {
       "video": "Normal_Videos_015_x264.mp4",
       "frames_processed": 30,
-      "max_ml_score": 34.894999999999996,
-      "max_ai_score": 0.0,
-      "max_final_score": 34.894999999999996,
-      "avg_ml_score": 12.33688057073164,
-      "avg_ai_score": 0.0,
-      "avg_final_score": 12.33688057073164,
+      "max_ml_score": 24.275,
+      "max_ai_score": 10.0,
+      "max_final_score": 18.828666666666667,
+      "avg_ml_score": 8.884514858165513,
+      "avg_ai_score": 0.3333333333333333,
+      "avg_final_score": 8.551431524832179,
       "passed": 
