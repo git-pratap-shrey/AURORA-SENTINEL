@@ -66,7 +66,8 @@ class RiskScoringEngine:
         # Balanced weights (Sum = 1.0) as per Innovation Spec
         self.weights = {
             'weapon_detection': 0.40,   # Adjusted down slightly to accommodate fire
-            'aggressive_posture': 0.30, 
+            # Reduced to limit noisy "overfire" from combat-like pose jitter.
+            'aggressive_posture': 0.20,
             'fire_smoke': 0.45,         # High weight for fire/smoke
             'proximity_violation': 0.15,
             'unattended_object': 0.15,
@@ -281,7 +282,7 @@ class RiskScoringEngine:
         
         if weapon_conf > 0.4 or fire_conf >= self.fire_threat_thresholds['moderate']:
             suppression_factor = 1.0  # Deterministic detector bypass
-        elif aggression > 0.6:
+        elif aggression > 0.7:
             suppression_factor = 1.0  # High aggression bypasses suppression
         else:
             high_risk_count = sum(1 for v in factors.values() if v is not None and v > 0.4)
@@ -325,17 +326,19 @@ class RiskScoringEngine:
         aggression = factors.get('aggressive_posture', 0) or 0
         proximity = factors.get('proximity_violation', 0) or 0
         
-        # Minimum 70% when aggression > 0.6 AND proximity violation
-        if aggression > 0.6 and proximity > 0.3:
+        # Minimum 70% only for higher-confirmed aggression + close proximity.
+        if aggression > 0.7 and proximity > 0.35:
             raw_score = max(raw_score, 0.70)
             suppression_factor = 1.0
             print(f"DEBUG: High aggression ({aggression:.2f}) + proximity detected. Escalating to 70%+")
         
-        # Strike + Proximity Escalation: Add 0.3 to raw score
+        # Strike + Proximity Escalation: Add a smaller bump only for strong strike velocity.
         strike_indicators = self._detect_strike_velocity(detection_data['poses'])
         if len(strike_indicators) > 0 and proximity > 0.3:
-            raw_score += 0.3
-            print(f"DEBUG: Strike motion + proximity detected. Escalating by 0.3")
+            max_velocity = max((v.get('velocity', 0.0) or 0.0) for v in strike_indicators.values())
+            if max_velocity > (self.thresholds['strike_velocity'] * 1.25):
+                raw_score += 0.2
+                print(f"DEBUG: Strike motion + proximity detected. Escalating by 0.2")
         
         # 4. Enhanced Grappling Detection
         grappling_score = self._detect_grappling(detection_data['poses'])
@@ -354,7 +357,7 @@ class RiskScoringEngine:
 
         # 4. Contradiction Detection (Innovation #23: Safety through Skepticism)
         # High aggression (fast) + High loitering (static) = CONTRADICTION
-        if factors.get('aggressive_posture', 0) > 0.6 and factors.get('loitering', 0) > 0.6:
+        if factors.get('aggressive_posture', 0) > 0.7 and factors.get('loitering', 0) > 0.6:
             print("DEBUG: Contradiction detected (High Aggression + High Loitering). Reducing scores.")
             factors['aggressive_posture'] *= 0.5
             factors['loitering'] *= 0.5
@@ -541,6 +544,9 @@ class RiskScoringEngine:
         Returns dict of {track_id: {'has_strike': bool, 'velocity': float, 'limb': str}}
         """
         strike_indicators = {}
+        # Same-frame left/right samples get appended back-to-back to the shared deque.
+        # To avoid "velocity" computed from limb switching, we require a small time delta.
+        min_strike_dt_sec = 0.01
         
         for pose in poses:
             if 'track_id' not in pose or pose['track_id'] == -1:
@@ -552,38 +558,54 @@ class RiskScoringEngine:
             # Check wrist velocity
             wrist_history = self.keypoint_history[tid]['wrists']
             if len(wrist_history) >= 2:
-                # Get last two wrist positions
                 recent = wrist_history[-1]
-                previous = wrist_history[-2]
-                
-                # Calculate displacement (already normalized by height)
-                displacement = np.linalg.norm(recent[1] - previous[1])
-                
-                # Check if displacement exceeds threshold (40% of body height)
-                if displacement > self.thresholds['strike_velocity']:
-                    strike_indicators[tid] = {
-                        'has_strike': True,
-                        'velocity': displacement,
-                        'limb': 'wrist',
-                        'side': recent[0]  # 'left' or 'right'
-                    }
-                    continue
+                recent_side = recent[0]
+                # Find the most recent previous sample for the SAME side with enough dt.
+                previous = None
+                for i in range(len(wrist_history) - 2, -1, -1):
+                    cand = wrist_history[i]
+                    if cand[0] != recent_side:
+                        continue
+                    if (recent[2] - cand[2]) <= min_strike_dt_sec:
+                        continue
+                    previous = cand
+                    break
+
+                if previous is not None:
+                    displacement = np.linalg.norm(recent[1] - previous[1])
+                    if displacement > self.thresholds['strike_velocity']:
+                        strike_indicators[tid] = {
+                            'has_strike': True,
+                            'velocity': displacement,
+                            'limb': 'wrist',
+                            'side': recent_side  # 'left' or 'right'
+                        }
+                        continue
             
             # Check ankle velocity (kicks)
             ankle_history = self.keypoint_history[tid]['ankles']
             if len(ankle_history) >= 2:
                 recent = ankle_history[-1]
-                previous = ankle_history[-2]
-                
-                displacement = np.linalg.norm(recent[1] - previous[1])
-                
-                if displacement > self.thresholds['strike_velocity']:
-                    strike_indicators[tid] = {
-                        'has_strike': True,
-                        'velocity': displacement,
-                        'limb': 'ankle',
-                        'side': recent[0]
-                    }
+                recent_side = recent[0]
+                previous = None
+                for i in range(len(ankle_history) - 2, -1, -1):
+                    cand = ankle_history[i]
+                    if cand[0] != recent_side:
+                        continue
+                    if (recent[2] - cand[2]) <= min_strike_dt_sec:
+                        continue
+                    previous = cand
+                    break
+
+                if previous is not None:
+                    displacement = np.linalg.norm(recent[1] - previous[1])
+                    if displacement > self.thresholds['strike_velocity']:
+                        strike_indicators[tid] = {
+                            'has_strike': True,
+                            'velocity': displacement,
+                            'limb': 'ankle',
+                            'side': recent_side
+                        }
         
         return strike_indicators
 
@@ -815,8 +837,8 @@ class RiskScoringEngine:
             end_pos = np.array(history[-1][0])
             displacement = np.linalg.norm(end_pos - start_pos)
             
-            # Scale-invariant movement check: If moved < 50% of height over the window
-            if displacement < (height * 0.5):
+            # Scale-invariant movement check: require "mostly stationary" to count as loitering.
+            if displacement < (height * 0.4):
                 loiter_count += 1
                 
         if p_count == 0: return 0.0

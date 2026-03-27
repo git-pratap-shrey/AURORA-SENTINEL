@@ -82,6 +82,13 @@ async def websocket_live_feed(websocket: WebSocket):
                     await websocket.send_json({"error": "Models Loading..."})
                 await asyncio.sleep(0.5) # Reduced backoff
                 continue
+            
+            # If detector exists but scoring engine is unavailable, avoid crashing the websocket loop.
+            if not ml_service.risk_engine:
+                err = ml_service.load_error or "Risk engine unavailable"
+                await websocket.send_json({"error": f"Risk engine unavailable: {err}"})
+                await asyncio.sleep(0.5)
+                continue
 
             # Decode frame
             nparr = np.frombuffer(data, np.uint8)
@@ -141,6 +148,12 @@ async def websocket_live_feed(websocket: WebSocket):
                     import traceback
                     print(f"ML Processing Failed: {e}")
                     traceback.print_exc()
+                    # Ensure we keep streaming frames even if scoring fails.
+                    detection = cached_result.get("detection", {"poses": [], "objects": []})
+                    risk_score = cached_result.get("risk_score", 0)
+                    risk_factors = cached_result.get("risk_factors", {}) or {}
+                    alert = cached_result.get("alert", None)
+                    faces = cached_result.get("faces", []) or []
             else:
                 detection = cached_result["detection"]
                 risk_score = cached_result["risk_score"]
